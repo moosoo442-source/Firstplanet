@@ -1,981 +1,763 @@
-/* ============================================
-   CharaWiki v2.0 — script.js
-   더 많은 테마 / 꾸미기 / 미디어 / 편집 기능
-============================================ */
-
-const STORAGE_KEY = 'charawiki-state-v2';
-const CONTENT_KEY = 'charawiki-content-v2';
+/* ===================================================
+   CharaWiki v2 — script.js
+=================================================== */
 
 // ============ STATE ============
-const state = {
-  theme: 'default',
-  font: 'gothic',
-  pattern: 'none',
-  border: 'solid',
-  divider: 'solid',
-  accent: '#3366cc',
-  fontSize: 15,
-  cursor: 'default',
-  anim: 'medium',
-  bgImage: '',
-  bgOpacity: 30,
-  textColor: '',
-  linkColor: '',
-  infoboxHeader: '',
-  cardStyle: false,
-  infoPos: 'right',
-  cols: '1',
-  stickyToc: false,
-  autoDark: false,
-  imgFilter: 'none',
+const S = {
+  theme:'default', font:'gothic', pattern:'none',
+  border:'solid', divider:'solid', card:'off',
+  cursor:'default', anim:'normal', ibpos:'right',
+  accent:'#3366cc', fontSize:15,
+  bgImg:null, bgOpacity:20,
 };
 
-const $ = (sel, root = document) => root.querySelector(sel);
-const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+// ============ ELEMENTS ============
 const body = document.body;
-
-// ============ TOAST ============
-const toast = $('#toast');
-let toastTimer = null;
-function showToast(msg) {
-  toast.textContent = msg;
-  toast.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
-}
+const overlay = document.getElementById('panelOverlay');
+let activePanel = null;
+let currentEmojiTarget = null;
 
 // ============ PANELS ============
-let activePanel = null;
-const overlay = $('#panelOverlay');
-
-function openPanel(panel) {
-  if (activePanel && activePanel !== panel) closePanel(activePanel);
-  panel.classList.add('open');
+function openPanel(id) {
+  const p = document.getElementById(id);
+  if (!p) return;
+  if (activePanel && activePanel !== p) closeAllPanels();
+  p.classList.add('open');
   overlay.classList.add('active');
-  activePanel = panel;
+  activePanel = p;
 }
-function closePanel(panel) {
-  if (!panel) return;
-  panel.classList.remove('open');
+function closeAllPanels() {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('open'));
   overlay.classList.remove('active');
   activePanel = null;
 }
-function togglePanel(panel) {
-  activePanel === panel ? closePanel(panel) : openPanel(panel);
-}
 
-$('#themeToggleBtn').addEventListener('click', e => { e.stopPropagation(); togglePanel($('#themePanel')); });
-$('#decorToggleBtn').addEventListener('click', e => { e.stopPropagation(); togglePanel($('#decorPanel')); });
-$('#layoutToggleBtn').addEventListener('click', e => { e.stopPropagation(); togglePanel($('#layoutPanel')); });
-$('#dataToggleBtn').addEventListener('click', e => { e.stopPropagation(); togglePanel($('#dataPanel')); });
-$$('.panel-close').forEach(btn => btn.addEventListener('click', () => closePanel($('#' + btn.dataset.close))));
-overlay.addEventListener('click', () => closePanel(activePanel));
+document.getElementById('themeToggleBtn').onclick = (e) => { e.stopPropagation(); activePanel?.id==='themePanel'?closeAllPanels():openPanel('themePanel'); };
+document.getElementById('decorToggleBtn').onclick = (e) => { e.stopPropagation(); activePanel?.id==='decorPanel'?closeAllPanels():openPanel('decorPanel'); };
+document.getElementById('editToggleBtn').onclick  = (e) => { e.stopPropagation(); activePanel?.id==='editPanel'?closeAllPanels():openPanel('editPanel'); };
+overlay.onclick = closeAllPanels;
+
+document.querySelectorAll('.panel-close').forEach(btn => {
+  btn.onclick = () => closeAllPanels();
+});
 
 // ============ THEME ============
-const THEMES = ['default', 'dark', 'sakura', 'ocean', 'forest', 'galaxy', 'retro', 'halloween', 'christmas'];
-$$('.theme-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
+const THEMES = ['default','dark','sakura','ocean','forest','galaxy','retro','halloween','xmas'];
+document.querySelectorAll('.theme-btn').forEach(btn => {
+  btn.onclick = () => {
     applyTheme(btn.dataset.theme);
-    $$('.theme-btn').forEach(b => b.classList.toggle('active', b === btn));
-    saveState();
-  });
+    document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  };
 });
-function applyTheme(theme) {
-  THEMES.forEach(t => body.classList.remove(`theme-${t}`));
-  body.classList.add(`theme-${theme}`);
-  state.theme = theme;
+function applyTheme(t) {
+  THEMES.forEach(x => body.classList.remove('theme-'+x));
+  body.classList.add('theme-'+t);
+  S.theme = t; save();
 }
 
 // ============ FONT ============
-const FONTS = ['gothic', 'serif', 'handwriting', 'cute', 'bold', 'pen'];
-$$('[data-font]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    applyFont(btn.dataset.font);
-    $$('[data-font]').forEach(b => b.classList.toggle('active', b === btn));
-    saveState();
-  });
+document.querySelectorAll('[data-font]').forEach(btn => {
+  btn.onclick = () => { applyFont(btn.dataset.font); setActive('[data-font]', btn); };
 });
-function applyFont(font) {
-  FONTS.forEach(f => body.classList.remove(`font-${f}`));
-  body.classList.add(`font-${font}`);
-  state.font = font;
+function applyFont(f) {
+  ['gothic','serif','handwriting','cute'].forEach(x => body.classList.remove('font-'+x));
+  body.classList.add('font-'+f); S.font = f; save();
 }
 
 // ============ PATTERN ============
-const PATTERNS = ['none', 'grid', 'dot', 'diagonal', 'paper', 'hearts', 'stars'];
-$$('[data-pattern]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    applyPattern(btn.dataset.pattern);
-    $$('[data-pattern]').forEach(b => b.classList.toggle('active', b === btn));
-    saveState();
-  });
+document.querySelectorAll('[data-pattern]').forEach(btn => {
+  btn.onclick = () => { applyPattern(btn.dataset.pattern); setActive('[data-pattern]', btn); };
 });
-function applyPattern(pattern) {
-  PATTERNS.forEach(p => body.classList.remove(`pattern-${p}`));
-  body.classList.add(`pattern-${pattern}`);
-  state.pattern = pattern;
+function applyPattern(p) {
+  ['none','grid','dot','diagonal','wave','star'].forEach(x => body.classList.remove('pattern-'+x));
+  body.classList.add('pattern-'+p); S.pattern = p; save();
 }
 
-// ============ BG IMAGE ============
-$('#bgImageUpload').addEventListener('change', e => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    state.bgImage = ev.target.result;
-    applyBgImage();
-    saveState();
-    showToast('배경 이미지가 적용되었어요');
-  };
-  reader.readAsDataURL(file);
+// ============ BORDER ============
+const infobox = document.getElementById('infobox');
+document.querySelectorAll('[data-border]').forEach(btn => {
+  btn.onclick = () => { applyBorder(btn.dataset.border); setActive('[data-border]', btn); };
 });
-$('#bgImageRemove').addEventListener('click', () => {
-  state.bgImage = '';
-  applyBgImage();
-  saveState();
-  showToast('배경 이미지가 제거되었어요');
-});
-$('#bgOpacityRange').addEventListener('input', e => {
-  state.bgOpacity = +e.target.value;
-  $('#bgOpacityVal').textContent = state.bgOpacity + '%';
-  document.documentElement.style.setProperty('--bg-image-opacity', state.bgOpacity / 100);
-  saveState();
-});
-function applyBgImage() {
-  if (state.bgImage) {
-    body.classList.add('has-bg-image');
-    document.documentElement.style.setProperty('--bg-image', `url(${state.bgImage})`);
-  } else {
-    body.classList.remove('has-bg-image');
-    document.documentElement.style.setProperty('--bg-image', 'none');
-  }
-}
-
-// ============ CURSOR ============
-const CURSOR_EMOJIS = { star: '⭐', heart: '💗', sparkle: '✨', leaf: '🍃' };
-const customCursor = $('#customCursor');
-$$('[data-cursor]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    applyCursor(btn.dataset.cursor);
-    $$('[data-cursor]').forEach(b => b.classList.toggle('active', b === btn));
-    saveState();
-  });
-});
-function applyCursor(cursor) {
-  body.classList.toggle('cursor-default', cursor === 'default');
-  state.cursor = cursor;
-  if (cursor === 'default') {
-    customCursor.classList.add('hidden');
-  } else {
-    customCursor.classList.remove('hidden');
-    customCursor.textContent = CURSOR_EMOJIS[cursor] || '';
-  }
-}
-document.addEventListener('mousemove', e => {
-  if (state.cursor !== 'default') {
-    customCursor.style.left = e.clientX + 'px';
-    customCursor.style.top = e.clientY + 'px';
-  }
-});
-
-// ============ INFOBOX BORDER ============
-const infobox = $('#infobox');
-const BORDERS = ['solid', 'dashed', 'double', 'shadow', 'rounded', 'glow'];
-$$('[data-border]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    applyBorder(btn.dataset.border);
-    $$('[data-border]').forEach(b => b.classList.toggle('active', b === btn));
-    saveState();
-  });
-});
-function applyBorder(border) {
-  BORDERS.forEach(b => infobox.classList.remove(`border-${b}`));
-  infobox.classList.add(`border-${border}`);
-  state.border = border;
-}
-
-// ============ INFOBOX HEADER COLOR ============
-$('#infoboxHeaderColor').addEventListener('input', e => {
-  state.infoboxHeader = e.target.value;
-  applyInfoboxHeader();
-  saveState();
-});
-function applyInfoboxHeader() {
-  if (state.infoboxHeader) {
-    document.documentElement.style.setProperty('--bg-infobox-header', state.infoboxHeader);
-  } else {
-    document.documentElement.style.removeProperty('--bg-infobox-header');
-  }
+function applyBorder(b) {
+  ['solid','dashed','double','shadow','glow'].forEach(x => infobox.classList.remove('border-'+x));
+  infobox.classList.add('border-'+b); S.border = b; save();
 }
 
 // ============ DIVIDER ============
-const DIVIDERS = ['solid', 'dashed', 'gradient', 'double', 'wave'];
-$$('[data-divider]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    applyDivider(btn.dataset.divider);
-    $$('[data-divider]').forEach(b => b.classList.toggle('active', b === btn));
-    saveState();
+document.querySelectorAll('[data-divider]').forEach(btn => {
+  btn.onclick = () => { applyDivider(btn.dataset.divider); setActive('[data-divider]', btn); };
+});
+function applyDivider(d) {
+  document.querySelectorAll('.section-divider').forEach(el => {
+    ['solid','dashed','gradient','double','none'].forEach(x => el.classList.remove('divider-'+x));
+    el.classList.add('divider-'+d);
   });
-});
-function applyDivider(divider) {
-  $$('.section-divider').forEach(el => {
-    DIVIDERS.forEach(d => el.classList.remove(`divider-${d}`));
-    el.classList.add(`divider-${divider}`);
-  });
-  state.divider = divider;
-}
-
-// ============ ACCENT ============
-$$('.color-dot').forEach(dot => {
-  dot.addEventListener('click', () => {
-    applyAccent(dot.dataset.color);
-    $$('.color-dot').forEach(d => d.classList.toggle('active', d === dot));
-    $('#customColor').value = dot.dataset.color;
-    saveState();
-  });
-});
-$('#customColor').addEventListener('input', e => {
-  applyAccent(e.target.value);
-  $$('.color-dot').forEach(d => d.classList.remove('active'));
-  saveState();
-});
-function applyAccent(color) {
-  document.documentElement.style.setProperty('--accent', color);
-  body.style.setProperty('--accent', color);
-  body.style.setProperty('--quote-border', color);
-  body.style.setProperty('--tag-color', color);
-  state.accent = color;
-}
-
-// ============ TEXT/LINK COLOR ============
-$('#textColor').addEventListener('input', e => {
-  state.textColor = e.target.value;
-  applyTextColor();
-  saveState();
-});
-$('#textColorReset').addEventListener('click', () => {
-  state.textColor = '';
-  $('#textColor').value = '#202122';
-  applyTextColor();
-  saveState();
-});
-function applyTextColor() {
-  if (state.textColor) body.style.setProperty('--text', state.textColor);
-  else body.style.removeProperty('--text');
-}
-
-$('#linkColor').addEventListener('input', e => {
-  state.linkColor = e.target.value;
-  applyLinkColor();
-  saveState();
-});
-$('#linkColorReset').addEventListener('click', () => {
-  state.linkColor = '';
-  $('#linkColor').value = state.accent || '#3366cc';
-  applyLinkColor();
-  saveState();
-});
-function applyLinkColor() {
-  if (state.linkColor) body.style.setProperty('--text-link', state.linkColor);
-  else body.style.removeProperty('--text-link');
-}
-
-// ============ FONT SIZE ============
-$('#fontSizeRange').addEventListener('input', e => {
-  state.fontSize = +e.target.value;
-  document.documentElement.style.fontSize = state.fontSize + 'px';
-  $('#fontSizeVal').textContent = state.fontSize + 'px';
-  saveState();
-});
-
-// ============ ANIMATIONS ============
-const ANIMS = ['none', 'medium', 'strong'];
-$$('[data-anim]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    applyAnim(btn.dataset.anim);
-    $$('[data-anim]').forEach(b => b.classList.toggle('active', b === btn));
-    saveState();
-  });
-});
-function applyAnim(anim) {
-  ANIMS.forEach(a => body.classList.remove(`anim-${a}`));
-  body.classList.add(`anim-${anim}`);
-  state.anim = anim;
+  S.divider = d; save();
 }
 
 // ============ CARD STYLE ============
-$('#cardStyleToggle').addEventListener('change', e => {
-  state.cardStyle = e.target.checked;
-  body.classList.toggle('card-style', state.cardStyle);
-  saveState();
+document.querySelectorAll('[data-card]').forEach(btn => {
+  btn.onclick = () => { applyCard(btn.dataset.card); setActive('[data-card]', btn); };
 });
-
-// ============ LAYOUT ============
-const wikiBody = $('#wikiBody');
-const article = $('#article');
-const toc = $('#toc');
-$$('[data-infopos]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    applyInfoPos(btn.dataset.infopos);
-    $$('[data-infopos]').forEach(b => b.classList.toggle('active', b === btn));
-    saveState();
-  });
-});
-function applyInfoPos(pos) {
-  wikiBody.classList.remove('infopos-right', 'infopos-left', 'infopos-top');
-  wikiBody.classList.add(`infopos-${pos}`);
-  if (pos === 'top') {
-    wikiBody.style.flexDirection = 'column';
-    const articleEl = $('.article');
-    wikiBody.insertBefore(infobox, articleEl);
-  }
-  state.infoPos = pos;
+function applyCard(c) {
+  const article = document.getElementById('article');
+  article.classList.toggle('card-on', c === 'on');
+  S.card = c; save();
 }
 
-$$('[data-cols]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    applyCols(btn.dataset.cols);
-    $$('[data-cols]').forEach(b => b.classList.toggle('active', b === btn));
-    saveState();
-  });
+// ============ CURSOR ============
+const cursorDot  = document.getElementById('cursorDot');
+const cursorRing = document.getElementById('cursorRing');
+let mouseX = 0, mouseY = 0;
+let ringX = 0, ringY = 0;
+
+document.addEventListener('mousemove', e => {
+  mouseX = e.clientX; mouseY = e.clientY;
+  cursorDot.style.left  = mouseX + 'px';
+  cursorDot.style.top   = mouseY + 'px';
 });
-function applyCols(c) {
-  article.classList.toggle('cols-2', c === '2');
-  state.cols = c;
+
+function animRing() {
+  ringX += (mouseX - ringX) * 0.12;
+  ringY += (mouseY - ringY) * 0.12;
+  cursorRing.style.left = ringX + 'px';
+  cursorRing.style.top  = ringY + 'px';
+  requestAnimationFrame(animRing);
 }
+animRing();
 
-$('#stickyTocToggle').addEventListener('change', e => {
-  state.stickyToc = e.target.checked;
-  toc.classList.toggle('sticky-toc', state.stickyToc);
-  saveState();
-});
+const CURSOR_EMOJIS = { star:'⭐', heart:'❤️', pen:'✒️' };
+let trailThrottle = 0;
 
-$('#autoDarkToggle').addEventListener('change', e => {
-  state.autoDark = e.target.checked;
-  applyAutoDark();
-  saveState();
+document.querySelectorAll('[data-cursor]').forEach(btn => {
+  btn.onclick = () => { applyCursor(btn.dataset.cursor); setActive('[data-cursor]', btn); };
 });
-function applyAutoDark() {
-  if (state.autoDark && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    applyTheme('dark');
-    $$('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === 'dark'));
+function applyCursor(c) {
+  ['default','star','heart','pen'].forEach(x => body.classList.remove('cursor-'+x));
+  body.classList.add('cursor-'+c);
+  S.cursor = c; save();
+
+  if (c !== 'default') {
+    document.addEventListener('mousemove', spawnTrail);
+  } else {
+    document.removeEventListener('mousemove', spawnTrail);
   }
 }
+function spawnTrail(e) {
+  const now = Date.now();
+  if (now - trailThrottle < 60) return;
+  trailThrottle = now;
+  const emoji = CURSOR_EMOJIS[S.cursor];
+  if (!emoji) return;
+  const el = document.createElement('div');
+  el.className = 'cursor-trail';
+  el.textContent = emoji;
+  el.style.left = e.clientX + 'px';
+  el.style.top  = e.clientY + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 700);
+}
+
+// ============ ANIMATION ============
+document.querySelectorAll('[data-anim]').forEach(btn => {
+  btn.onclick = () => { applyAnim(btn.dataset.anim); setActive('[data-anim]', btn); };
+});
+function applyAnim(a) {
+  ['none','normal','strong'].forEach(x => body.classList.remove('anim-'+x));
+  body.classList.add('anim-'+a); S.anim = a; save();
+}
+
+// ============ INFOBOX POSITION ============
+const wikiBody = document.getElementById('wikiBody');
+document.querySelectorAll('[data-ibpos]').forEach(btn => {
+  btn.onclick = () => { applyIbpos(btn.dataset.ibpos); setActive('[data-ibpos]', btn); };
+});
+function applyIbpos(p) {
+  ['right','left','top'].forEach(x => wikiBody.classList.remove('ibpos-'+x));
+  wikiBody.classList.add('ibpos-'+p); S.ibpos = p; save();
+}
+
+// ============ ACCENT COLOR ============
+document.querySelectorAll('.cdot').forEach(dot => {
+  dot.onclick = () => {
+    applyAccent(dot.dataset.color);
+    document.querySelectorAll('.cdot').forEach(d => d.classList.remove('active'));
+    dot.classList.add('active');
+  };
+});
+const customAccent = document.getElementById('customAccent');
+customAccent.oninput = () => {
+  applyAccent(customAccent.value);
+  document.querySelectorAll('.cdot').forEach(d => d.classList.remove('active'));
+};
+function applyAccent(c) {
+  ['--accent','--text-link','--quote-border','--tag-color'].forEach(v => body.style.setProperty(v, c));
+  S.accent = c; save();
+}
+
+// ============ FONT SIZE ============
+const fszRange = document.getElementById('fszRange');
+const fszVal   = document.getElementById('fszVal');
+fszRange.oninput = () => {
+  const s = fszRange.value;
+  document.documentElement.style.fontSize = s + 'px';
+  fszVal.textContent = s + 'px';
+  S.fontSize = +s; save();
+};
+
+// ============ BACKGROUND IMAGE ============
+const bgLayer    = document.getElementById('bgImgLayer');
+const bgOpSlider = document.getElementById('bgOpacity');
+const bgOpVal    = document.getElementById('bgOpacityVal');
+
+document.querySelectorAll('[data-bgimg]').forEach(btn => {
+  btn.onclick = () => {
+    if (btn.dataset.bgimg === 'upload') {
+      document.getElementById('bgImgUpload').click();
+    } else {
+      bgLayer.style.backgroundImage = '';
+      bgLayer.style.opacity = 0;
+      S.bgImg = null; save();
+      setActive('[data-bgimg]', btn);
+    }
+  };
+});
+
+document.getElementById('bgImgUpload').onchange = e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    bgLayer.style.backgroundImage = `url(${ev.target.result})`;
+    bgLayer.style.opacity = bgOpSlider.value / 100;
+    S.bgImg = ev.target.result;
+    save();
+  };
+  r.readAsDataURL(f);
+};
+
+bgOpSlider.oninput = () => {
+  const v = bgOpSlider.value;
+  bgLayer.style.opacity = v / 100;
+  bgOpVal.textContent = v + '%';
+  S.bgOpacity = +v; save();
+};
 
 // ============ RESET DECOR ============
-$('#resetDecor').addEventListener('click', () => {
-  if (!confirm('꾸미기 설정을 초기화할까요? (내용은 유지됩니다)')) return;
-  applyFont('gothic'); applyPattern('none'); applyBorder('solid'); applyDivider('solid');
-  applyAnim('medium'); applyCursor('default');
-  state.bgImage = ''; state.bgOpacity = 30; state.textColor = '';
-  state.linkColor = ''; state.infoboxHeader = ''; state.cardStyle = false;
-  applyBgImage(); applyTextColor(); applyLinkColor(); applyInfoboxHeader();
-  body.classList.remove('card-style');
-  document.documentElement.style.removeProperty('font-size');
-  $('#fontSizeRange').value = 15; $('#fontSizeVal').textContent = '15px';
-  $('#bgOpacityRange').value = 30; $('#bgOpacityVal').textContent = '30%';
-  body.style.removeProperty('--accent');
-  body.style.removeProperty('--quote-border');
-  body.style.removeProperty('--tag-color');
-  document.documentElement.style.removeProperty('--accent');
-  $('#customColor').value = '#3366cc';
-  $('#infoboxHeaderColor').value = '#cee0f2';
-  $('#textColor').value = '#202122';
-  $('#linkColor').value = '#3366cc';
-  $('#cardStyleToggle').checked = false;
-  $$('[data-font]').forEach(b => b.classList.toggle('active', b.dataset.font === 'gothic'));
-  $$('[data-pattern]').forEach(b => b.classList.toggle('active', b.dataset.pattern === 'none'));
-  $$('[data-border]').forEach(b => b.classList.toggle('active', b.dataset.border === 'solid'));
-  $$('[data-divider]').forEach(b => b.classList.toggle('active', b.dataset.divider === 'solid'));
-  $$('[data-anim]').forEach(b => b.classList.toggle('active', b.dataset.anim === 'medium'));
-  $$('[data-cursor]').forEach(b => b.classList.toggle('active', b.dataset.cursor === 'default'));
-  $$('.color-dot').forEach((d, i) => d.classList.toggle('active', i === 0));
-  state.font = 'gothic'; state.pattern = 'none'; state.border = 'solid';
-  state.divider = 'solid'; state.accent = '#3366cc'; state.fontSize = 15;
-  state.anim = 'medium'; state.cursor = 'default';
-  saveState();
-  showToast('꾸미기 초기화 완료');
-});
+document.getElementById('resetDecor').onclick = () => {
+  if (!confirm('꾸미기 설정을 초기화할까요?')) return;
+  applyFont('gothic');     setActiveByValue('[data-font]', 'gothic');
+  applyPattern('none');    setActiveByValue('[data-pattern]', 'none');
+  applyBorder('solid');    setActiveByValue('[data-border]', 'solid');
+  applyDivider('solid');   setActiveByValue('[data-divider]', 'solid');
+  applyCard('off');        setActiveByValue('[data-card]', 'off');
+  applyCursor('default');  setActiveByValue('[data-cursor]', 'default');
+  applyAnim('normal');     setActiveByValue('[data-anim]', 'normal');
+  applyIbpos('right');     setActiveByValue('[data-ibpos]', 'right');
+  applyAccent('#3366cc');
+  customAccent.value = '#3366cc';
+  document.querySelectorAll('.cdot').forEach((d,i) => d.classList.toggle('active', i===0));
+  document.documentElement.style.fontSize = '15px';
+  fszRange.value = 15; fszVal.textContent = '15px';
+  bgLayer.style.backgroundImage = '';
+  bgLayer.style.opacity = 0;
+  bgOpSlider.value = 20; bgOpVal.textContent = '20%';
+  Object.assign(S, { font:'gothic', pattern:'none', border:'solid', divider:'solid', card:'off', cursor:'default', anim:'normal', ibpos:'right', accent:'#3366cc', fontSize:15, bgImg:null, bgOpacity:20 });
+  save();
+};
 
-// ============ IMAGE UPLOAD ============
-const imgUpload = $('#imgUpload');
-const imgPlaceholder = $('#imgPlaceholder');
-const charImg = $('#charImg');
-const imgWrap = $('.infobox-img-wrap');
+// ============ IMAGE UPLOAD (INFOBOX) ============
+const imgUpload      = document.getElementById('imgUpload');
+const imgPlaceholder = document.getElementById('imgPlaceholder');
+const imgLoaded      = document.getElementById('imgLoaded');
+const charImg        = document.getElementById('charImg');
 
-imgWrap.addEventListener('click', e => {
-  if (e.target.classList.contains('img-filter-btn')) return;
-  imgUpload.click();
-});
-imgUpload.addEventListener('change', e => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    charImg.src = ev.target.result;
-    charImg.classList.remove('hidden');
-    imgPlaceholder.style.display = 'none';
-    imgWrap.classList.add('has-img');
-    saveContent();
-  };
-  reader.readAsDataURL(file);
-});
+document.getElementById('imgWrap').onclick = () => imgUpload.click();
+imgUpload.onclick = e => e.stopPropagation();
+imgUpload.onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => { charImg.src = ev.target.result; imgPlaceholder.classList.add('hidden'); imgLoaded.classList.remove('hidden'); };
+  r.readAsDataURL(f);
+};
+document.getElementById('removeImgBtn').onclick = e => {
+  e.stopPropagation();
+  charImg.src = ''; imgLoaded.classList.add('hidden'); imgPlaceholder.classList.remove('hidden');
+};
 
-const FILTERS = ['none', 'sepia', 'grayscale', 'bright', 'vintage', 'warm'];
-$$('.img-filter-btn').forEach(btn => {
-  btn.addEventListener('click', e => {
+// IMAGE FILTERS
+document.querySelectorAll('.filt-btn').forEach(btn => {
+  btn.onclick = e => {
     e.stopPropagation();
-    const f = btn.dataset.filter;
-    FILTERS.forEach(x => charImg.classList.remove(`filter-${x}`));
-    if (f !== 'none') charImg.classList.add(`filter-${f}`);
-    $$('.img-filter-btn').forEach(b => b.classList.toggle('active', b === btn));
-    state.imgFilter = f;
-    saveState();
-  });
+    const FILTERS = { none:'', sepia:'sepia(1)', grayscale:'grayscale(1)', bright:'brightness(1.3) contrast(1.1)' };
+    charImg.style.filter = FILTERS[btn.dataset.filter] || '';
+    document.querySelectorAll('.filt-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  };
 });
 
-// ============ INFOBOX ROWS ============
-const infoTableBody = $('#infoTableBody');
-const addRowModal = $('#addRowModal');
+// ============ TOC TOGGLE ============
+const tocToggle = document.getElementById('tocToggle');
+const toc       = document.getElementById('toc');
+tocToggle.onclick = () => {
+  toc.classList.toggle('toc-collapsed');
+  tocToggle.textContent = toc.classList.contains('toc-collapsed') ? '▼ 펼치기' : '▲ 접기';
+};
 
-$('#addRowBtn').addEventListener('click', () => openModal('addRowModal'));
-$('#addSectionHeaderBtn').addEventListener('click', () => {
-  const name = prompt('섹션 헤더 이름을 입력하세요:', '추가 정보');
-  if (!name) return;
-  const tr = document.createElement('tr');
-  tr.className = 'info-section-row';
-  tr.innerHTML = `<th colspan="2" class="info-section-header" contenteditable="true">${escapeHtml(name)}</th>`;
-  infoTableBody.appendChild(tr);
-  saveContent();
+// ============ SECTION DELETE ============
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('sec-del-btn')) {
+    const sec = e.target.closest('.wiki-section');
+    if (sec && confirm('이 섹션을 삭제할까요?')) { sec.remove(); updateToc(); }
+  }
 });
 
-$('#modalOk').addEventListener('click', () => {
-  const key = $('#newRowKey').value.trim();
-  const val = $('#newRowVal').value.trim();
-  if (!key) { $('#newRowKey').focus(); return; }
+// ============ ADD ROW (INFOBOX) ============
+const addRowModal = document.getElementById('addRowModal');
+document.getElementById('addRowBtn').onclick = () => openModal('addRowModal');
+document.getElementById('addRowOk').onclick = () => {
+  const k = document.getElementById('newRowKey').value.trim();
+  const v = document.getElementById('newRowVal').value.trim();
+  if (!k) { document.getElementById('newRowKey').focus(); return; }
   const tr = document.createElement('tr');
-  tr.innerHTML = `<th contenteditable="true">${escapeHtml(key)}</th><td contenteditable="true">${escapeHtml(val) || '-'}</td><td class="row-del" title="삭제">×</td>`;
-  infoTableBody.appendChild(tr);
+  tr.innerHTML = `<th>${k}</th><td contenteditable="true">${v||'-'}</td>`;
+  document.getElementById('infoTableBody').appendChild(tr);
+  document.getElementById('newRowKey').value = '';
+  document.getElementById('newRowVal').value = '';
   closeModal('addRowModal');
-  $('#newRowKey').value = ''; $('#newRowVal').value = '';
-  saveContent();
-});
+};
 
-infoTableBody.addEventListener('click', e => {
-  if (e.target.classList.contains('row-del')) {
-    e.target.closest('tr').remove();
-    saveContent();
-  }
-});
-
-// ============ TAGS ============
-const wikiTags = $('#wikiTags');
-$('#addTagBtn').addEventListener('click', () => {
-  const name = prompt('새 태그 이름:', '');
+// ============ ADD INFO HEADER ============
+document.getElementById('addInfoHeaderBtn').onclick = () => {
+  const name = prompt('소제목 이름을 입력하세요:');
   if (!name) return;
-  const span = document.createElement('span');
-  span.className = 'wiki-tag';
-  span.contentEditable = 'true';
-  span.innerHTML = `${escapeHtml(name)}<button class="tag-del" title="삭제">×</button>`;
-  wikiTags.appendChild(span);
-  saveContent();
-});
-wikiTags.addEventListener('click', e => {
-  if (e.target.classList.contains('tag-del')) {
-    e.target.closest('.wiki-tag').remove();
-    saveContent();
-  }
-});
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<th colspan="2" class="info-head" contenteditable="true">${name}</th>`;
+  document.getElementById('infoTableBody').appendChild(tr);
+};
 
-// ============ ABILITY BARS ============
-function bindAbilityRow(row) {
-  const range = row.querySelector('.ability-range');
-  const bar = row.querySelector('.bar');
-  range.addEventListener('input', () => {
-    bar.style.width = range.value + '%';
-    bar.textContent = range.value;
-    saveContent();
+// ============ ADD SECTION ============
+document.getElementById('addSectionBtn').onclick = () => openModal('addSectionModal');
+document.getElementById('addSectionOk').onclick = () => {
+  const title = document.getElementById('newSecTitle').value.trim();
+  if (!title) { document.getElementById('newSecTitle').focus(); return; }
+  const idx = document.querySelectorAll('.wiki-section').length + 1;
+  const id  = 'sec-custom-' + Date.now();
+  const sec = document.createElement('section');
+  sec.className = 'wiki-section';
+  sec.id = id;
+  sec.dataset.title = title;
+  sec.innerHTML = `
+    <div class="section-header-row">
+      <h2 class="section-heading" contenteditable="true">${idx}. ${title}</h2>
+      <div class="section-tools"><button class="sec-del-btn" title="섹션 삭제">🗑️</button></div>
+    </div>
+    <div class="section-divider divider-${S.divider}"></div>
+    <p contenteditable="true">내용을 여기에 입력하세요.</p>`;
+  document.getElementById('sectionsEnd').before(sec);
+  updateToc();
+  document.getElementById('newSecTitle').value = '';
+  closeModal('addSectionModal');
+  sec.scrollIntoView({ behavior:'smooth', block:'start' });
+};
+
+// ============ ADD GALLERY SECTION ============
+document.getElementById('addGalleryBtn').onclick = () => {
+  const title = prompt('갤러리 섹션 제목:', '갤러리');
+  if (title === null) return;
+  const idx = document.querySelectorAll('.wiki-section').length + 1;
+  const sec = document.createElement('section');
+  sec.className = 'wiki-section';
+  sec.dataset.title = title || '갤러리';
+  sec.innerHTML = `
+    <div class="section-header-row">
+      <h2 class="section-heading" contenteditable="true">${idx}. ${title || '갤러리'}</h2>
+      <div class="section-tools"><button class="sec-del-btn">🗑️</button></div>
+    </div>
+    <div class="section-divider divider-${S.divider}"></div>
+    <div class="gallery-grid" id="gallery-${Date.now()}">
+      ${makeGalleryItem()}${makeGalleryItem()}${makeGalleryItem()}
+    </div>
+    <button class="btn-add-gallery-item">＋ 이미지 추가</button>`;
+  document.getElementById('sectionsEnd').before(sec);
+  bindGallery(sec);
+  updateToc();
+  closeAllPanels();
+};
+
+function makeGalleryItem() {
+  return `<div class="gallery-item">
+    <div class="gallery-item-placeholder">
+      <span>🖼️</span>
+      <input type="file" accept="image/*"/>
+    </div>
+    <button class="gallery-del">✕</button>
+    <div class="gallery-caption" contenteditable="true">캡션</div>
+  </div>`;
+}
+
+function bindGallery(sec) {
+  sec.addEventListener('change', e => {
+    if (e.target.type !== 'file') return;
+    const f = e.target.files[0]; if (!f) return;
+    const item = e.target.closest('.gallery-item');
+    const r = new FileReader();
+    r.onload = ev => {
+      item.innerHTML = `<img src="${ev.target.result}" alt="gallery"/>
+        <button class="gallery-del">✕</button>
+        <div class="gallery-caption" contenteditable="true">캡션</div>`;
+    };
+    r.readAsDataURL(f);
   });
-  row.querySelector('.ability-del').addEventListener('click', () => {
-    row.remove();
-    saveContent();
+  sec.addEventListener('click', e => {
+    if (e.target.classList.contains('gallery-del')) { e.target.closest('.gallery-item').remove(); return; }
+    if (e.target.classList.contains('btn-add-gallery-item')) {
+      const grid = sec.querySelector('.gallery-grid');
+      const div = document.createElement('div');
+      div.innerHTML = makeGalleryItem();
+      grid.appendChild(div.firstElementChild);
+      bindGallery(sec);
+    }
   });
 }
-$$('.ability-row').forEach(bindAbilityRow);
 
-document.addEventListener('click', e => {
-  if (e.target.matches('[data-add-ability]')) {
-    const list = $('#abilityList');
-    const row = document.createElement('div');
-    row.className = 'ability-row';
-    row.innerHTML = `
-      <span class="ability-name" contenteditable="true">새 능력</span>
-      <div class="bar-wrap"><div class="bar" style="width:50%">50</div></div>
-      <input type="range" class="ability-range" min="0" max="100" value="50" />
-      <button class="ability-del" title="삭제">×</button>`;
-    list.appendChild(row);
-    bindAbilityRow(row);
-    row.querySelector('.ability-name').focus();
-    saveContent();
-  }
-});
+// ============ ADD VIDEO SECTION ============
+document.getElementById('addVideoBtn').onclick = () => openModal('videoModal');
+document.getElementById('videoOk').onclick = () => {
+  let url  = document.getElementById('ytUrl').value.trim();
+  const title = document.getElementById('ytTitle').value.trim() || '관련 영상';
+  if (!url) { document.getElementById('ytUrl').focus(); return; }
+  // extract video ID
+  let vid = url;
+  const m = url.match(/(?:youtu\.be\/|v=|embed\/)([A-Za-z0-9_-]{11})/);
+  if (m) vid = m[1];
+  const idx = document.querySelectorAll('.wiki-section').length + 1;
+  const sec = document.createElement('section');
+  sec.className = 'wiki-section';
+  sec.dataset.title = title;
+  sec.innerHTML = `
+    <div class="section-header-row">
+      <h2 class="section-heading" contenteditable="true">${idx}. ${title}</h2>
+      <div class="section-tools"><button class="sec-del-btn">🗑️</button></div>
+    </div>
+    <div class="section-divider divider-${S.divider}"></div>
+    <div class="yt-wrap">
+      <iframe src="https://www.youtube.com/embed/${vid}" allowfullscreen loading="lazy"></iframe>
+    </div>`;
+  document.getElementById('sectionsEnd').before(sec);
+  updateToc();
+  document.getElementById('ytUrl').value = '';
+  document.getElementById('ytTitle').value = '';
+  closeModal('videoModal');
+};
 
-// ============ RELATIONS ============
-const EMOJI_LIST = ['👤','👨','👩','👨‍👦','👩‍👧','👫','👬','👭','💑','💔','❤️','🤝','⚔️','🤺','👹','👺','😈','🦹','🧙','🧝','🧛','🧚','🐉','🐺','🦊','🦁','🐯','🐻','🦅'];
-const emojiPicker = $('#emojiPicker');
-const emojiPickerRow = $('#emojiPickerRow');
-EMOJI_LIST.forEach(emo => {
-  const b = document.createElement('button');
-  b.textContent = emo;
-  b.addEventListener('click', () => {
-    if (emojiPicker._target) {
-      emojiPicker._target.textContent = emo;
-      saveContent();
+// ============ ADD LINKS SECTION ============
+document.getElementById('addLinksBtn').onclick = () => {
+  if (document.getElementById('sec-links')) { alert('외부 링크 섹션이 이미 있어요!'); return; }
+  const idx = document.querySelectorAll('.wiki-section').length + 1;
+  const sec = document.createElement('section');
+  sec.className = 'wiki-section'; sec.id = 'sec-links'; sec.dataset.title = '외부 링크';
+  sec.innerHTML = `
+    <div class="section-header-row">
+      <h2 class="section-heading">${idx}. 외부 링크</h2>
+      <div class="section-tools"><button class="sec-del-btn">🗑️</button></div>
+    </div>
+    <div class="section-divider divider-${S.divider}"></div>
+    <div class="ext-links" id="extLinksList">
+      ${makeExtLink('🌐','공식 사이트','https://example.com')}
+      ${makeExtLink('🐦','트위터 / X','https://twitter.com')}
+    </div>
+    <button class="add-btn" id="addExtLinkBtn">＋ 링크 추가</button>`;
+  document.getElementById('sectionsEnd').before(sec);
+  bindExtLinks(sec);
+  updateToc();
+  closeAllPanels();
+};
+
+function makeExtLink(icon, label, url) {
+  return `<div class="ext-link-item">
+    <span class="ext-link-icon" contenteditable="true">${icon}</span>
+    <div>
+      <div class="ext-link-label" contenteditable="true">${label}</div>
+      <div class="ext-link-url"><a href="${url}" target="_blank" contenteditable="true">${url}</a></div>
+    </div>
+    <button class="ext-link-del">✕</button>
+  </div>`;
+}
+
+function bindExtLinks(sec) {
+  sec.addEventListener('click', e => {
+    if (e.target.classList.contains('ext-link-del')) { e.target.closest('.ext-link-item').remove(); return; }
+    if (e.target.id === 'addExtLinkBtn') {
+      const list = sec.querySelector('.ext-links');
+      const div = document.createElement('div');
+      div.innerHTML = makeExtLink('🔗','링크 이름','https://');
+      list.appendChild(div.firstElementChild);
     }
-    emojiPicker.classList.remove('open');
   });
-  emojiPickerRow.appendChild(b);
-});
+}
 
-document.addEventListener('click', e => {
-  if (e.target.classList.contains('emoji-pick')) {
-    e.stopPropagation();
-    const rect = e.target.getBoundingClientRect();
-    emojiPicker.style.top = (rect.bottom + window.scrollY + 4) + 'px';
-    emojiPicker.style.left = (rect.left + window.scrollX) + 'px';
-    emojiPicker._target = e.target;
-    emojiPicker.classList.add('open');
-  } else if (!emojiPicker.contains(e.target)) {
-    emojiPicker.classList.remove('open');
-  }
-});
-
-$('#addRelationBtn').addEventListener('click', () => {
+// ============ RELATION ============
+document.getElementById('addRelBtn').onclick = () => {
   const card = document.createElement('div');
   card.className = 'relation-card';
   card.innerHTML = `
-    <button class="relation-icon emoji-pick">👤</button>
-    <div class="relation-info">
-      <div class="relation-name" contenteditable="true">이름</div>
-      <div class="relation-type" contenteditable="true">관계</div>
-      <div class="relation-desc" contenteditable="true">설명을 입력하세요.</div>
+    <div class="rel-emoji-wrap"><button class="rel-emoji-btn" title="이모지 변경">👤</button></div>
+    <div class="rel-info">
+      <div class="rel-name" contenteditable="true">이름</div>
+      <div class="rel-type" contenteditable="true">관계</div>
+      <div class="rel-desc" contenteditable="true">설명을 입력하세요.</div>
     </div>
-    <button class="card-del" title="삭제">×</button>`;
-  $('#relationCards').appendChild(card);
-  card.querySelector('.relation-name').focus();
-  saveContent();
+    <button class="rel-del">✕</button>`;
+  document.getElementById('relationCards').appendChild(card);
+  card.querySelector('.rel-name').focus();
+};
+
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('rel-del')) e.target.closest('.relation-card').remove();
+  if (e.target.classList.contains('rel-emoji-btn')) {
+    currentEmojiTarget = e.target;
+    buildEmojiGrid();
+    openModal('emojiModal');
+  }
+  if (e.target.classList.contains('emoji-btn-item')) {
+    if (currentEmojiTarget) currentEmojiTarget.textContent = e.target.textContent;
+    closeModal('emojiModal');
+  }
 });
 
+function buildEmojiGrid() {
+  const grid = document.getElementById('emojiGrid');
+  const emojis = [...document.getElementById('emojiGrid').textContent];
+  grid.innerHTML = '';
+  emojis.forEach(em => {
+    if (em.trim()) {
+      const btn = document.createElement('button');
+      btn.className = 'emoji-btn-item';
+      btn.textContent = em;
+      grid.appendChild(btn);
+    }
+  });
+}
+// init emoji grid on load
+(function initEmoji() {
+  const grid = document.getElementById('emojiGrid');
+  const raw = grid.textContent;
+  grid.innerHTML = '';
+  [...raw].forEach(em => {
+    if (em.trim()) {
+      const btn = document.createElement('button');
+      btn.className = 'emoji-btn-item';
+      btn.textContent = em;
+      grid.appendChild(btn);
+    }
+  });
+})();
+
 // ============ TIMELINE ============
-$('#addTimelineBtn').addEventListener('click', () => {
+document.getElementById('addTlBtn').onclick = () => {
   const item = document.createElement('div');
-  item.className = 'timeline-item';
+  item.className = 'tl-item';
   item.innerHTML = `
-    <div class="timeline-dot"></div>
-    <div class="timeline-content">
-      <div class="timeline-date" contenteditable="true">시기</div>
-      <div class="timeline-text" contenteditable="true">내용을 입력하세요.</div>
-    </div>
-    <button class="card-del" title="삭제">×</button>`;
-  $('#timeline').appendChild(item);
-  item.querySelector('.timeline-date').focus();
-  saveContent();
+    <div class="tl-dot"></div>
+    <div class="tl-content">
+      <div class="tl-date" contenteditable="true">시기</div>
+      <div class="tl-text" contenteditable="true">내용을 입력하세요.</div>
+      <button class="tl-del">✕</button>
+    </div>`;
+  document.getElementById('timeline').appendChild(item);
+  item.querySelector('.tl-date').focus();
+};
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('tl-del')) e.target.closest('.tl-item').remove();
 });
 
 // ============ QUOTES ============
-$('#addQuoteBtn').addEventListener('click', () => {
+document.getElementById('addQuoteBtn').onclick = () => {
   const item = document.createElement('div');
   item.className = 'quote-item';
   item.innerHTML = `
-    <blockquote class="quote-text" contenteditable="true">"어록을 입력하세요."</blockquote>
-    <div class="quote-source" contenteditable="true">— 출처</div>
-    <button class="card-del" title="삭제">×</button>`;
-  $('#quotesList').appendChild(item);
-  item.querySelector('.quote-text').focus();
-  saveContent();
-});
-
-// ============ CARD DELETE (delegated) ============
+    <blockquote contenteditable="true">"어록을 입력하세요."</blockquote>
+    <div class="quote-src" contenteditable="true">— 출처</div>
+    <button class="quote-del">✕</button>`;
+  document.getElementById('quotesList').appendChild(item);
+  item.querySelector('blockquote').focus();
+};
 document.addEventListener('click', e => {
-  if (e.target.classList.contains('card-del')) {
-    const item = e.target.closest('.relation-card, .timeline-item, .quote-item, .link-item, .video-item, .gallery-item');
-    if (item) { item.remove(); saveContent(); }
-  }
+  if (e.target.classList.contains('quote-del')) e.target.closest('.quote-item').remove();
 });
 
-// ============ GALLERY ============
-const galleryGrid = $('#galleryGrid');
-$('#galleryUpload').addEventListener('change', e => {
-  Array.from(e.target.files || []).forEach(file => {
-    const reader = new FileReader();
-    reader.onload = ev => {
-      addGalleryItem(ev.target.result);
-      saveContent();
-    };
-    reader.readAsDataURL(file);
-  });
-  e.target.value = '';
-});
-function addGalleryItem(src) {
-  const item = document.createElement('div');
-  item.className = 'gallery-item';
-  item.innerHTML = `<img src="${src}" alt="갤러리 이미지" /><button class="card-del" title="삭제">×</button>`;
-  galleryGrid.appendChild(item);
+// ============ ADD ABILITY ============
+document.getElementById('addAbilityBtn').onclick = () => openModal('abilityModal');
+document.getElementById('abilityOk').onclick = () => {
+  const name = document.getElementById('abilityName').value.trim();
+  const val  = Math.min(100, Math.max(0, +document.getElementById('abilityVal').value || 70));
+  const desc = document.getElementById('abilityDesc').value.trim();
+  if (!name) { document.getElementById('abilityName').focus(); return; }
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td contenteditable="true">${name}</td><td><div class="bar-wrap"><div class="bar" style="width:${val}%"><span>${val}</span></div></div></td><td contenteditable="true">${desc||'-'}</td>`;
+  document.getElementById('abilityTableBody').appendChild(tr);
+  ['abilityName','abilityDesc'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('abilityVal').value = 70;
+  closeModal('abilityModal');
+};
+
+// ============ TAGS ============
+document.getElementById('addTagBtn').onclick = addTag;
+document.getElementById('newTagInput').onkeydown = e => { if (e.key === 'Enter') addTag(); };
+function addTag() {
+  const input = document.getElementById('newTagInput');
+  const val = input.value.trim(); if (!val) return;
+  const item = document.createElement('span');
+  item.className = 'tag-item';
+  item.innerHTML = `${val}<button class="tag-del">✕</button>`;
+  item.querySelector('.tag-del').onclick = () => item.remove();
+  document.getElementById('tagList').appendChild(item);
+  input.value = '';
 }
 
-// ============ VIDEOS ============
-const videoList = $('#videoList');
-$('#addVideoBtn').addEventListener('click', () => openModal('addVideoModal'));
-$('#videoModalOk').addEventListener('click', () => {
-  const url = $('#newVideoUrl').value.trim();
-  const caption = $('#newVideoCaption').value.trim();
-  if (!url) return;
-  const id = parseYouTubeId(url);
-  if (!id) { showToast('올바른 YouTube URL을 입력해 주세요'); return; }
-  addVideo(id, caption);
-  closeModal('addVideoModal');
-  $('#newVideoUrl').value = ''; $('#newVideoCaption').value = '';
-  saveContent();
-});
-function parseYouTubeId(input) {
-  if (/^[\w-]{11}$/.test(input)) return input;
-  const m = input.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([\w-]{11})/);
-  return m ? m[1] : null;
-}
-function addVideo(id, caption) {
-  const item = document.createElement('div');
-  item.className = 'video-item';
-  item.innerHTML = `
-    <div class="video-frame-wrap">
-      <iframe src="https://www.youtube-nocookie.com/embed/${id}" title="YouTube" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-    </div>
-    <div class="video-caption" contenteditable="true">${escapeHtml(caption || '영상 설명')}</div>
-    <button class="card-del" title="삭제">×</button>`;
-  videoList.appendChild(item);
-}
-
-// ============ LINKS ============
-const linkList = $('#linkList');
-$('#addLinkBtn').addEventListener('click', () => openModal('addLinkModal'));
-$('#linkModalOk').addEventListener('click', () => {
-  const icon = $('#newLinkIcon').value.trim() || '🌐';
-  const url = $('#newLinkUrl').value.trim();
-  const label = $('#newLinkLabel').value.trim() || '링크';
-  if (!url) return;
-  addLink(icon, url, label);
-  closeModal('addLinkModal');
-  $('#newLinkUrl').value = ''; $('#newLinkLabel').value = '';
-  saveContent();
-});
-function addLink(icon, url, label) {
-  const item = document.createElement('div');
-  item.className = 'link-item';
-  item.innerHTML = `
-    <span class="link-icon">${escapeHtml(icon)}</span>
-    <span class="link-label" contenteditable="true">${escapeHtml(label)}</span>
-    <a class="link-url" href="${escapeAttr(url)}" target="_blank" rel="noopener" contenteditable="true">${escapeHtml(url)}</a>
-    <button class="card-del" title="삭제">×</button>`;
-  linkList.appendChild(item);
-}
-
-// ============ SECTIONS (add/move/delete) ============
-const sectionsRoot = $('#sectionsRoot');
-
-document.addEventListener('click', e => {
-  if (!e.target.classList.contains('sec-btn')) return;
-  const action = e.target.dataset.action;
-  const section = e.target.closest('.wiki-section');
-  if (!section) return;
-  if (action === 'up' && section.previousElementSibling) {
-    sectionsRoot.insertBefore(section, section.previousElementSibling);
-    rebuildToc();
-    saveContent();
-  } else if (action === 'down' && section.nextElementSibling) {
-    sectionsRoot.insertBefore(section.nextElementSibling, section);
-    rebuildToc();
-    saveContent();
-  } else if (action === 'del') {
-    if (confirm('이 섹션을 삭제할까요?')) {
-      section.remove();
-      rebuildToc();
-      saveContent();
-    }
-  }
-});
-
-$('#addSectionBtn').addEventListener('click', () => openModal('addSectionModal'));
-$('#sectionModalOk').addEventListener('click', () => {
-  const title = $('#newSectionTitle').value.trim();
-  if (!title) return;
-  const sec = document.createElement('section');
-  sec.className = 'wiki-section';
-  sec.dataset.sectionId = 'custom-' + Date.now();
-  sec.innerHTML = `
-    <div class="section-header-bar">
-      <h2 class="section-heading" contenteditable="true">${escapeHtml(title)}</h2>
-      <div class="section-controls">
-        <button class="sec-btn" data-action="up">↑</button>
-        <button class="sec-btn" data-action="down">↓</button>
-        <button class="sec-btn" data-action="del">×</button>
-      </div>
-    </div>
-    <div class="section-divider divider-${state.divider}"></div>
-    <div class="section-body" contenteditable="true"><p>여기에 내용을 입력하세요.</p></div>`;
-  sectionsRoot.appendChild(sec);
-  closeModal('addSectionModal');
-  $('#newSectionTitle').value = '';
-  rebuildToc();
-  saveContent();
-});
-
-// ============ TOC ============
-function rebuildToc() {
-  const tocList = $('#tocList');
-  tocList.innerHTML = '';
-  $$('.wiki-section', sectionsRoot).forEach((sec, i) => {
-    const h = sec.querySelector('.section-heading');
-    if (!h) return;
-    const id = 'sec-' + (sec.dataset.sectionId || i);
-    sec.id = id;
-    const li = document.createElement('li');
-    li.innerHTML = `<a href="#${id}">${i + 1}. ${escapeHtml(h.textContent)}</a>`;
-    tocList.appendChild(li);
-  });
-  $$('#tocList a').forEach(a => {
-    a.addEventListener('click', e => {
-      e.preventDefault();
-      const t = document.querySelector(a.getAttribute('href'));
-      if (t) t.scrollIntoView({ behavior: 'smooth' });
-    });
-  });
-}
-
-// Update TOC when section headings are edited (with debounce)
-let tocTimer = null;
-sectionsRoot.addEventListener('input', e => {
-  if (e.target.classList.contains('section-heading')) {
-    clearTimeout(tocTimer);
-    tocTimer = setTimeout(rebuildToc, 400);
-  }
-  saveContentDebounced();
-});
-
-// ============ MODAL HELPERS ============
-function openModal(id) { $('#' + id).classList.add('open'); const f = $('#' + id + ' .modal-input'); if (f) f.focus(); }
-function closeModal(id) { $('#' + id).classList.remove('open'); }
-$$('[data-modal-close]').forEach(b => b.addEventListener('click', () => closeModal(b.dataset.modalClose)));
-$$('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }));
-$$('.modal-input').forEach(input => input.addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    const ok = input.closest('.modal-box').querySelector('.btn-modal-ok');
-    if (ok) ok.click();
-  }
-}));
-
-// ============ ESCAPE HELPERS ============
-function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
-function escapeAttr(s) { return escapeHtml(s); }
-
-// ============ SHARE / PRINT / URL ============
-$('#shareBtn').addEventListener('click', async () => {
-  const url = window.location.href;
-  if (navigator.share) {
-    try { await navigator.share({ title: $('#charName').textContent, url }); return; } catch {}
-  }
-  navigator.clipboard.writeText(url).then(() => showToast('URL이 복사되었어요'));
-});
-$('#copyUrlBtn').addEventListener('click', () => {
-  navigator.clipboard.writeText(window.location.href).then(() => showToast('URL이 복사되었어요'));
-});
-$('#printBtn').addEventListener('click', () => window.print());
-
-// ============ EXPORT / IMPORT JSON ============
-$('#exportJsonBtn').addEventListener('click', () => {
+// ============ EXPORT JSON ============
+document.getElementById('exportJsonBtn').onclick = () => {
   const data = {
-    state,
-    content: getContentSnapshot(),
-    exportedAt: new Date().toISOString(),
-    version: '2.0',
+    title: document.querySelector('.wiki-title')?.textContent || '',
+    subtitle: document.querySelector('.wiki-subtitle')?.textContent || '',
+    settings: S,
+    sections: [...document.querySelectorAll('.wiki-section')].map(s => ({
+      id: s.id, title: s.dataset.title, html: s.innerHTML
+    }))
   };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `charawiki-${($('#charName').textContent || 'export').trim().replace(/\s+/g, '-')}-${Date.now()}.json`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-  showToast('JSON 파일로 저장했어요');
-});
+  document.getElementById('exportTextarea').value = JSON.stringify(data, null, 2);
+  openModal('exportModal');
+};
+document.getElementById('copyJsonBtn').onclick = () => {
+  const ta = document.getElementById('exportTextarea');
+  ta.select();
+  document.execCommand('copy');
+  document.getElementById('copyJsonBtn').textContent = '✅ 복사됨!';
+  setTimeout(() => document.getElementById('copyJsonBtn').textContent = '📋 복사', 1500);
+};
 
-$('#importJsonInput').addEventListener('change', e => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
+// ============ IMPORT JSON ============
+document.getElementById('importJsonBtn').onclick = () => document.getElementById('importJsonFile').click();
+document.getElementById('importJsonFile').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
     try {
       const data = JSON.parse(ev.target.result);
-      if (data.content?.html) {
-        if (!confirm('현재 내용을 모두 덮어쓸까요?')) return;
-        loadContentSnapshot(data.content);
-      }
-      if (data.state) {
-        Object.assign(state, data.state);
-        applyAllState();
-        saveState();
-      }
-      showToast('불러오기 완료!');
-    } catch (err) {
-      showToast('잘못된 JSON 파일이에요');
-    }
+      if (data.title)    document.querySelector('.wiki-title').textContent    = data.title;
+      if (data.subtitle) document.querySelector('.wiki-subtitle').textContent = data.subtitle;
+      if (data.settings) loadStateObj(data.settings);
+      alert('불러오기 완료!');
+    } catch { alert('JSON 형식이 올바르지 않아요.'); }
   };
-  reader.readAsText(file);
-  e.target.value = '';
+  r.readAsText(f);
+};
+
+// ============ EXPORT / PRINT ============
+document.getElementById('exportBtn').onclick = () => {
+  document.getElementById('exportJsonBtn').click();
+};
+[document.getElementById('printBtn'), document.getElementById('printBtn2')].forEach(btn => {
+  if (btn) btn.onclick = () => window.print();
 });
 
-$('#resetAllBtn').addEventListener('click', () => {
-  if (!confirm('모든 내용과 설정을 초기화할까요?\n(저장된 데이터가 모두 사라져요)')) return;
-  localStorage.removeItem(STORAGE_KEY);
-  localStorage.removeItem(CONTENT_KEY);
-  location.reload();
-});
+// ============ COPY URL ============
+document.getElementById('copyUrlBtn').onclick = () => {
+  navigator.clipboard.writeText(location.href).then(() => {
+    document.getElementById('copyUrlBtn').textContent = '✅ 복사됨!';
+    setTimeout(() => document.getElementById('copyUrlBtn').textContent = '🔗 URL 복사', 1500);
+  });
+};
 
-// ============ CONTENT SNAPSHOT ============
-function getContentSnapshot() {
-  return {
-    html: {
-      title: $('#charName').innerHTML,
-      subtitle: $('#charSubtitle').innerHTML,
-      tags: wikiTags.innerHTML,
-      infoboxTitle: $('#infoboxTitle').innerHTML,
-      infoboxImg: charImg.classList.contains('hidden') ? '' : charImg.src,
-      infoboxImgCaption: $('.infobox-img-caption').innerHTML,
-      infoTable: infoTableBody.innerHTML,
-      sections: sectionsRoot.innerHTML,
-    },
-  };
+// ============ TOC UPDATE ============
+function updateToc() {
+  const list = document.getElementById('tocList');
+  list.innerHTML = '';
+  document.querySelectorAll('.wiki-section').forEach((sec, i) => {
+    const heading = sec.querySelector('.section-heading');
+    if (!heading) return;
+    const li = document.createElement('li');
+    const a  = document.createElement('a');
+    a.href = '#' + sec.id;
+    a.textContent = heading.textContent;
+    a.onclick = e => { e.preventDefault(); sec.scrollIntoView({ behavior:'smooth' }); };
+    li.appendChild(a);
+    list.appendChild(li);
+  });
 }
-function loadContentSnapshot(c) {
-  const h = c.html || {};
-  if (h.title != null) $('#charName').innerHTML = h.title;
-  if (h.subtitle != null) $('#charSubtitle').innerHTML = h.subtitle;
-  if (h.tags != null) wikiTags.innerHTML = h.tags;
-  if (h.infoboxTitle != null) $('#infoboxTitle').innerHTML = h.infoboxTitle;
-  if (h.infoboxImg) {
-    charImg.src = h.infoboxImg;
-    charImg.classList.remove('hidden');
-    imgPlaceholder.style.display = 'none';
-    imgWrap.classList.add('has-img');
-  }
-  if (h.infoboxImgCaption != null) $('.infobox-img-caption').innerHTML = h.infoboxImgCaption;
-  if (h.infoTable != null) infoTableBody.innerHTML = h.infoTable;
-  if (h.sections != null) sectionsRoot.innerHTML = h.sections;
-  $$('.ability-row').forEach(bindAbilityRow);
-  rebuildToc();
+
+// ============ MODAL HELPERS ============
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.btn-cancel').forEach(btn => {
+  btn.onclick = () => { const id = btn.dataset.modal; if (id) closeModal(id); };
+});
+document.querySelectorAll('.modal').forEach(m => {
+  m.onclick = e => { if (e.target === m) m.classList.remove('open'); };
+});
+
+// ============ HELPERS ============
+function setActive(selector, activeBtn) {
+  document.querySelectorAll(selector).forEach(b => b.classList.remove('active'));
+  activeBtn.classList.add('active');
+}
+function setActiveByValue(selector, value) {
+  document.querySelectorAll(selector).forEach(b => {
+    const v = Object.values(b.dataset)[0];
+    b.classList.toggle('active', v === value);
+  });
 }
 
 // ============ SAVE / LOAD ============
-let saveTimer = null;
-function saveContentDebounced() {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveContent, 700);
+function save() {
+  try { localStorage.setItem('cwiki2', JSON.stringify(S)); } catch(e) {}
 }
-function saveContent() {
+
+function loadStateObj(saved) {
+  if (!saved) return;
+  if (saved.theme)   { applyTheme(saved.theme);   setActiveByValue('.theme-btn', saved.theme); }
+  if (saved.font)    { applyFont(saved.font);      setActiveByValue('[data-font]', saved.font); }
+  if (saved.pattern) { applyPattern(saved.pattern);setActiveByValue('[data-pattern]', saved.pattern); }
+  if (saved.border)  { applyBorder(saved.border);  setActiveByValue('[data-border]', saved.border); }
+  if (saved.divider) { applyDivider(saved.divider);setActiveByValue('[data-divider]', saved.divider); }
+  if (saved.card)    { applyCard(saved.card);       setActiveByValue('[data-card]', saved.card); }
+  if (saved.cursor)  { applyCursor(saved.cursor);   setActiveByValue('[data-cursor]', saved.cursor); }
+  if (saved.anim)    { applyAnim(saved.anim);       setActiveByValue('[data-anim]', saved.anim); }
+  if (saved.ibpos)   { applyIbpos(saved.ibpos);     setActiveByValue('[data-ibpos]', saved.ibpos); }
+  if (saved.accent)  { applyAccent(saved.accent); customAccent.value = saved.accent; }
+  if (saved.fontSize){ document.documentElement.style.fontSize = saved.fontSize + 'px'; fszRange.value = saved.fontSize; fszVal.textContent = saved.fontSize + 'px'; }
+  if (saved.bgImg)   { bgLayer.style.backgroundImage = `url(${saved.bgImg})`; bgLayer.style.opacity = (saved.bgOpacity||20)/100; bgOpSlider.value = saved.bgOpacity||20; bgOpVal.textContent = (saved.bgOpacity||20)+'%'; }
+  Object.assign(S, saved);
+}
+
+function loadSaved() {
   try {
-    localStorage.setItem(CONTENT_KEY, JSON.stringify(getContentSnapshot()));
-  } catch (e) {
-    console.warn('저장 실패 (localStorage 용량 초과 가능)', e);
-  }
+    const raw = localStorage.getItem('cwiki2');
+    if (raw) loadStateObj(JSON.parse(raw));
+  } catch(e) {}
 }
-function saveState() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
-}
-
-function loadContent() {
-  try {
-    const c = JSON.parse(localStorage.getItem(CONTENT_KEY));
-    if (c) loadContentSnapshot(c);
-  } catch (e) {}
-}
-
-function loadState() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (!saved) return;
-    Object.assign(state, saved);
-    applyAllState();
-  } catch (e) {}
-}
-
-function applyAllState() {
-  applyTheme(state.theme || 'default');
-  applyFont(state.font || 'gothic');
-  applyPattern(state.pattern || 'none');
-  applyBorder(state.border || 'solid');
-  applyDivider(state.divider || 'solid');
-  applyAccent(state.accent || '#3366cc');
-  applyCursor(state.cursor || 'default');
-  applyAnim(state.anim || 'medium');
-  applyBgImage();
-  applyTextColor();
-  applyLinkColor();
-  applyInfoboxHeader();
-  applyInfoPos(state.infoPos || 'right');
-  applyCols(state.cols || '1');
-  body.classList.toggle('card-style', !!state.cardStyle);
-  toc.classList.toggle('sticky-toc', !!state.stickyToc);
-  if (state.fontSize) document.documentElement.style.fontSize = state.fontSize + 'px';
-  document.documentElement.style.setProperty('--bg-image-opacity', (state.bgOpacity || 30) / 100);
-
-  if (state.imgFilter && state.imgFilter !== 'none') charImg.classList.add(`filter-${state.imgFilter}`);
-
-  // sync UI controls
-  $$('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === state.theme));
-  $$('[data-font]').forEach(b => b.classList.toggle('active', b.dataset.font === state.font));
-  $$('[data-pattern]').forEach(b => b.classList.toggle('active', b.dataset.pattern === state.pattern));
-  $$('[data-border]').forEach(b => b.classList.toggle('active', b.dataset.border === state.border));
-  $$('[data-divider]').forEach(b => b.classList.toggle('active', b.dataset.divider === state.divider));
-  $$('[data-anim]').forEach(b => b.classList.toggle('active', b.dataset.anim === state.anim));
-  $$('[data-cursor]').forEach(b => b.classList.toggle('active', b.dataset.cursor === state.cursor));
-  $$('[data-infopos]').forEach(b => b.classList.toggle('active', b.dataset.infopos === state.infoPos));
-  $$('[data-cols]').forEach(b => b.classList.toggle('active', b.dataset.cols === state.cols));
-  $$('.color-dot').forEach(d => d.classList.toggle('active', d.dataset.color === state.accent));
-  $$('.img-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === (state.imgFilter || 'none')));
-  $('#customColor').value = state.accent || '#3366cc';
-  $('#fontSizeRange').value = state.fontSize || 15;
-  $('#fontSizeVal').textContent = (state.fontSize || 15) + 'px';
-  $('#bgOpacityRange').value = state.bgOpacity || 30;
-  $('#bgOpacityVal').textContent = (state.bgOpacity || 30) + '%';
-  $('#textColor').value = state.textColor || '#202122';
-  $('#linkColor').value = state.linkColor || '#3366cc';
-  $('#infoboxHeaderColor').value = state.infoboxHeader || '#cee0f2';
-  $('#cardStyleToggle').checked = !!state.cardStyle;
-  $('#stickyTocToggle').checked = !!state.stickyToc;
-  $('#autoDarkToggle').checked = !!state.autoDark;
-}
-
-// ============ AUTO-SAVE CONTENT ON EDIT ============
-document.addEventListener('input', e => {
-  if (e.target.matches('[contenteditable], .ability-range, .modal-input')) {
-    if (!e.target.classList.contains('modal-input')) {
-      saveContentDebounced();
-    }
-  }
-});
 
 // ============ LAST MODIFIED ============
-function updateLastModified() {
-  $('#lastModified').textContent = new Date().toLocaleDateString('ko-KR', {
-    year: 'numeric', month: 'long', day: 'numeric'
-  });
-}
+const lastMod = document.getElementById('lastMod');
+if (lastMod) lastMod.textContent = new Date().toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric' });
+
+// ============ SMOOTH TOC ============
+document.querySelectorAll('.toc-list a').forEach(a => {
+  a.onclick = e => {
+    const t = document.querySelector(a.getAttribute('href'));
+    if (t) { e.preventDefault(); t.scrollIntoView({ behavior:'smooth', block:'start' }); }
+  };
+});
 
 // ============ INIT ============
-loadState();
-loadContent();
-rebuildToc();
-updateLastModified();
-applyAutoDark();
+loadSaved();
+updateToc();
 
-// listen for system theme changes
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-  if (state.autoDark) applyAutoDark();
+// Bind galleries and ext links that exist on load
+document.querySelectorAll('.wiki-section').forEach(sec => {
+  if (sec.querySelector('.gallery-grid')) bindGallery(sec);
+  if (sec.querySelector('.ext-links'))   bindExtLinks(sec);
 });
