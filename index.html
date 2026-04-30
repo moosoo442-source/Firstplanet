@@ -2,447 +2,379 @@
 <html lang="ko" data-theme="light">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <meta name="description" content="CharaWiki — 캐릭터 위키 빌더"/>
 <title>CharaWiki</title>
 <link rel="stylesheet" href="style.css"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Pretendard:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Nanum+Myeongjo:wght@400;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet"/>
 </head>
-<body>
+<body class="font-sans">
 
-<!-- ════════════════════════════════
-     READING PROGRESS
-════════════════════════════════ -->
-<div id="readProgress"></div>
-
-<!-- ════════════════════════════════
-     TOAST
-════════════════════════════════ -->
+<!-- 읽기 진행 바 -->
+<div id="rdProg"></div>
+<!-- 토스트 -->
 <div id="toastWrap" aria-live="polite"></div>
-
-<!-- ════════════════════════════════
-     LIGHTBOX
-════════════════════════════════ -->
-<div id="lightbox" role="dialog" aria-modal="true" aria-label="이미지 확대">
+<!-- 라이트박스 -->
+<div id="lightbox" role="dialog" aria-modal="true">
   <button id="lbClose" aria-label="닫기">✕</button>
   <img id="lbImg" src="" alt="확대 이미지"/>
 </div>
 
-<!-- ════════════════════════════════
-     CHARACTER LIST SIDEBAR (홈)
-════════════════════════════════ -->
-<div id="charListSidebar" class="sidebar" role="navigation" aria-label="캐릭터 목록">
-  <div class="sidebar-head">
-    <div class="sidebar-logo">
-      <span class="logo-mark">W</span>
-      <span class="logo-text">CharaWiki</span>
+<!-- ══════════ SIDEBAR ══════════ -->
+<div id="sidebar" class="hidden" role="navigation" aria-label="캐릭터 목록">
+  <div class="sb-head">
+    <div class="sb-logo">
+      <span class="logo-w">W</span>
+      <span class="logo-t">CharaWiki</span>
     </div>
-    <button id="sidebarToggle" class="icon-btn" aria-label="사이드바 닫기">✕</button>
+    <button id="sbClose" class="ib2" aria-label="닫기">✕</button>
   </div>
-
-  <div class="sidebar-search">
-    <input type="text" id="charSearch" placeholder="캐릭터 검색..." aria-label="캐릭터 검색"/>
+  <div class="sb-search">
+    <input id="charSearch" type="text" placeholder="캐릭터 검색..." aria-label="캐릭터 검색"/>
   </div>
-
-  <nav class="char-nav">
-    <div class="char-nav-label">캐릭터</div>
-    <ul id="charNavList" role="list"></ul>
-    <button id="newCharBtn" class="new-char-btn">
-      <span>＋</span> 새 캐릭터 만들기
-    </button>
+  <nav class="sb-nav">
+    <div class="sb-nav-label">캐릭터</div>
+    <ul id="charList" role="list"></ul>
+    <button id="newCharBtn" class="new-char-btn"><span>＋</span> 새 캐릭터 만들기</button>
   </nav>
-
-  <div class="sidebar-footer">
-    <button id="themeToggle" class="icon-btn" aria-label="테마 전환" title="라이트/다크 전환">◑</button>
-    <button id="shareBtn" class="icon-btn" aria-label="공유" title="URL 공유">⬆</button>
-    <button id="exportAllBtn" class="icon-btn" aria-label="전체 내보내기" title="전체 데이터 백업">↓</button>
-    <button id="importAllBtn" class="icon-btn" aria-label="가져오기" title="백업 불러오기">↑</button>
-    <input type="file" id="importFile" accept=".json" style="display:none"/>
+  <div class="sb-foot">
+    <button id="themeToggle" class="ib2" title="라이트/다크">◑</button>
+    <button id="shareBtn"    class="ib2" title="URL 공유">⬆</button>
+    <button id="exportBtn"   class="ib2" title="전체 백업">↓</button>
+    <button id="importBtn"   class="ib2" title="백업 불러오기">↑</button>
+    <input id="importFile" type="file" accept=".json" style="display:none"/>
   </div>
 </div>
 
-<!-- ════════════════════════════════
-     MAIN AREA
-════════════════════════════════ -->
-<div id="mainWrap">
+<!-- ══════════ MAIN ══════════ -->
+<div id="main">
 
-  <!-- TOP NAV BAR -->
-  <header id="topBar" role="banner">
-    <button id="menuBtn" class="icon-btn" aria-label="메뉴 열기" aria-expanded="false" aria-controls="charListSidebar">☰</button>
-
+  <!-- TOP BAR -->
+  <header id="topBar">
+    <button id="menuBtn" class="ib2" aria-label="메뉴" aria-expanded="false">☰</button>
     <nav id="breadcrumb" aria-label="현재 위치">
-      <span id="breadHome" class="bread-link" role="button" tabindex="0">CharaWiki</span>
-      <span class="bread-sep" aria-hidden="true">›</span>
-      <span id="breadChar" class="bread-current"></span>
-      <span id="breadSub" class="bread-sub" style="display:none">
-        <span class="bread-sep" aria-hidden="true">›</span>
-        <span id="breadSubName"></span>
+      <span id="breadHome" class="bread-home" role="button" tabindex="0">CharaWiki</span>
+      <span class="bread-sep">›</span>
+      <span id="breadCur" class="bread-cur"></span>
+      <span id="breadSubWrap" style="display:none">
+        <span class="bread-sep">›</span>
+        <span id="breadSubName" class="bread-sub-name"></span>
       </span>
     </nav>
-
-    <div id="topActions">
-      <!-- View mode indicator -->
-      <div id="modeChip" class="mode-chip mode-view">
+    <div id="topRight">
+      <div id="modeBadge" class="mode-badge mode-view">
         <span id="modeIcon">👁</span>
-        <span id="modeLabel">보기 모드</span>
+        <span id="modeLbl">보기 모드</span>
       </div>
-
-      <button id="editModeBtn" class="top-btn btn-edit" aria-label="편집 모드 전환">✎ 편집</button>
-      <button id="viewModeBtn" class="top-btn btn-view" style="display:none" aria-label="보기 모드로 전환">✓ 완료</button>
-      <button id="addSubPageBtn" class="top-btn btn-sub" aria-label="하위 페이지 추가">＋ 하위 페이지</button>
+      <button id="editBtn" class="top-btn btn-edit">✎ 편집</button>
+      <button id="doneBtn" class="top-btn btn-done" style="display:none">✓ 완료</button>
+      <button id="addSubPageBtn" class="top-btn btn-sub">＋ 하위 페이지</button>
     </div>
   </header>
 
-  <!-- HOME SCREEN (캐릭터 없을 때) -->
-  <div id="homeScreen" class="screen">
-    <div class="home-hero">
+  <!-- HOME -->
+  <div id="homeScreen">
+    <div class="hero">
       <div class="hero-mark">W</div>
-      <h1 class="hero-title">CharaWiki</h1>
-      <p class="hero-sub">캐릭터를 만들고, 꾸미고, 공유하세요.</p>
+      <h1 class="hero-h1">CharaWiki</h1>
+      <p class="hero-p">캐릭터를 만들고, 꾸미고, 공유하세요.</p>
       <button id="heroNewBtn" class="hero-btn">＋ 첫 캐릭터 만들기</button>
     </div>
   </div>
 
-  <!-- CHARACTER WIKI PAGE -->
-  <div id="wikiScreen" class="screen" style="display:none">
+  <!-- WIKI SCREEN -->
+  <div id="wikiScreen">
 
-    <!-- WIKI HEADER (커버 + 프로필) -->
-    <div id="wikiHeader">
+    <!-- WIKI HEADER -->
+    <div id="wikiHead">
       <div id="coverArea">
-        <div id="coverBg" class="cover-bg" aria-hidden="true"></div>
-        <div id="coverOverlay" aria-hidden="true"></div>
-        <div id="coverActions" class="edit-only">
-          <button id="changeCoverBtn" class="cover-btn">🖼 커버 변경</button>
-          <button id="removeCoverBtn" class="cover-btn">✕ 제거</button>
-          <input type="file" id="coverUpload" accept="image/*" style="display:none"/>
+        <div id="coverBg" class="cover-bg"></div>
+        <div class="cover-grad"></div>
+        <div id="coverBtns">
+          <button id="changeCoverBtn" class="cov-btn">🖼 커버 변경</button>
+          <button id="rmCoverBtn"     class="cov-btn">✕ 제거</button>
+          <input id="coverUpload" type="file" accept="image/*" style="display:none"/>
         </div>
       </div>
-
       <div id="profileRow">
         <div id="avatarWrap">
-          <div id="avatar" class="avatar" role="img" aria-label="캐릭터 아바타">
-            <span id="avatarEmoji">🧑</span>
-            <img id="avatarImg" class="avatar-img" src="" alt="" style="display:none"/>
+          <div class="avatar">
+            <span id="avEmoji">🧑</span>
+            <img id="avImg" class="avatar" src="" alt="" style="display:none"/>
+            <button id="avCam" class="av-cam" aria-label="아바타 변경">📷</button>
           </div>
-          <div id="avatarActions" class="edit-only">
-            <button id="changeAvatarBtn" class="avatar-btn" aria-label="아바타 변경">📷</button>
-            <input type="file" id="avatarUpload" accept="image/*" style="display:none"/>
-          </div>
+          <input id="avUpload" type="file" accept="image/*" style="display:none"/>
         </div>
-
-        <div id="headerInfo">
+        <div id="headInfo">
           <div id="headerTags" class="char-tags"></div>
-          <h1 id="charTitle" class="char-title" contenteditable="false" spellcheck="false" data-placeholder="캐릭터 이름"></h1>
-          <p id="charSubtitle" class="char-subtitle" contenteditable="false" spellcheck="false" data-placeholder="한 줄 소개를 입력하세요..."></p>
+          <h1 id="charTitle" class="char-title" contenteditable="false" spellcheck="false" data-ph="캐릭터 이름"></h1>
+          <p  id="charSub"   class="char-subtitle" contenteditable="false" spellcheck="false" data-ph="한 줄 소개..."></p>
         </div>
-
-        <div id="headerStats" class="header-stats">
-          <div class="stat-item"><span class="stat-val" id="statPages">0</span><span class="stat-label">페이지</span></div>
-          <div class="stat-item"><span class="stat-val" id="statWords">0</span><span class="stat-label">글자</span></div>
-          <div class="stat-item"><span class="stat-val" id="statEdited">-</span><span class="stat-label">수정일</span></div>
+        <div class="head-stats">
+          <div class="stat-i"><span id="stPages" class="stat-v">0</span><span class="stat-l">페이지</span></div>
+          <div class="stat-i"><span id="stWords" class="stat-v">0</span><span class="stat-l">글자</span></div>
+          <div class="stat-i"><span id="stEdit"  class="stat-v">-</span><span class="stat-l">수정일</span></div>
         </div>
       </div>
-
-      <!-- SUB PAGE TABS -->
-      <div id="subPageNav" role="tablist" aria-label="하위 페이지">
-        <div id="subPageTabs" class="tab-list"></div>
-      </div>
+      <div id="tabBar"><div id="tabRow" class="tab-row"></div></div>
     </div>
 
-    <!-- WIKI BODY -->
+    <!-- WIKI BODY: TOC | PAGE | STYLE PANEL -->
     <div id="wikiBody">
 
-      <!-- LEFT: TOC -->
-      <aside id="tocSidebar" role="navigation" aria-label="목차">
-        <div class="toc-head">목차</div>
+      <!-- TOC -->
+      <aside id="tocBox">
+        <div class="toc-hd">목차</div>
         <nav id="tocNav"></nav>
       </aside>
 
-      <!-- CENTER: PAGE CONTENT -->
-      <main id="pageContent" role="main">
-
-        <!-- INFOBOX + ARTICLE -->
-        <div id="contentLayout" class="layout-right">
+      <!-- PAGE AREA -->
+      <div id="pageArea">
+        <div id="cLayout" class="lay-right">
 
           <!-- INFOBOX -->
-          <div id="infoboxWrap">
-            <div id="infobox" class="infobox">
-              <div class="ib-header">
-                <span id="ibTitle" contenteditable="false" spellcheck="false" data-placeholder="캐릭터명">홍길동</span>
+          <div id="ibWrap">
+            <div id="infobox" class="ib sty-classic">
+              <div class="ib-hd"><span contenteditable="false" spellcheck="false" data-ph="캐릭터명">캐릭터명</span></div>
+              <!-- 인포박스 이미지 -->
+              <div id="ibImgPh" class="ib-img-ph">
+                <span>🖼</span><span>클릭하여 이미지 추가</span>
+                <input id="ibImgUp" type="file" accept="image/*" class="fo"/>
               </div>
-
-              <!-- Infobox Image -->
-              <div id="ibImgArea" class="ib-img-area">
-                <div id="ibImgPlaceholder" class="ib-img-placeholder">
-                  <span>🖼</span>
-                  <span>클릭하여 이미지 추가</span>
-                  <input type="file" id="ibImgUpload" accept="image/*" class="file-overlay"/>
-                </div>
-                <div id="ibImgLoaded" style="display:none">
-                  <img id="ibImg" class="ib-img" src="" alt="캐릭터 이미지"/>
-                  <div id="ibImgCaption" class="ib-caption" contenteditable="false" spellcheck="false" data-placeholder="이미지 설명">이미지 설명</div>
-                  <div class="ib-img-tools edit-only">
-                    <select id="ibImgFilter" class="filter-select" aria-label="이미지 필터">
-                      <option value="">원본</option>
-                      <option value="grayscale(1)">흑백</option>
-                      <option value="sepia(0.8)">세피아</option>
-                      <option value="brightness(1.2) contrast(1.1)">선명</option>
-                      <option value="blur(1px)">소프트</option>
-                    </select>
-                    <button id="ibImgRemove" class="sm-btn">✕ 제거</button>
-                  </div>
+              <div id="ibImgWrap" style="display:none">
+                <img id="ibImg" class="ib-img" src="" alt="캐릭터 이미지"/>
+                <div id="ibCap" class="ib-cap" contenteditable="false" spellcheck="false" data-ph="이미지 설명"></div>
+                <div class="ib-img-tools">
+                  <select id="ibFsel" class="fsel">
+                    <option value="">원본</option>
+                    <option value="grayscale(1)">흑백</option>
+                    <option value="sepia(0.8)">세피아</option>
+                    <option value="brightness(1.2) contrast(1.1)">선명</option>
+                    <option value="blur(1px)">소프트</option>
+                  </select>
+                  <button id="ibImgRm" class="sm-btn">✕ 제거</button>
                 </div>
               </div>
-
-              <!-- Infobox Table -->
-              <table id="ibTable" class="ib-table">
-                <tbody id="ibTableBody">
-                  <tr class="ib-section-row"><td colspan="2" class="ib-section-label" contenteditable="false">기본 정보</td></tr>
-                  <tr><th contenteditable="false">이름</th><td contenteditable="false">홍길동 (洪吉童)</td></tr>
-                  <tr><th contenteditable="false">나이</th><td contenteditable="false">24세</td></tr>
-                  <tr><th contenteditable="false">성별</th><td contenteditable="false">남성</td></tr>
-                  <tr><th contenteditable="false">생일</th><td contenteditable="false">3월 15일</td></tr>
-                  <tr class="ib-section-row"><td colspan="2" class="ib-section-label" contenteditable="false">신체</td></tr>
-                  <tr><th contenteditable="false">신장</th><td contenteditable="false">178cm</td></tr>
-                  <tr><th contenteditable="false">체중</th><td contenteditable="false">72kg</td></tr>
-                  <tr><th contenteditable="false">혈액형</th><td contenteditable="false">O형</td></tr>
-                  <tr class="ib-section-row"><td colspan="2" class="ib-section-label" contenteditable="false">기타</td></tr>
-                  <tr><th contenteditable="false">직업</th><td contenteditable="false">의적</td></tr>
-                  <tr><th contenteditable="false">소속</th><td contenteditable="false">활빈당</td></tr>
-                </tbody>
-              </table>
-
-              <div id="ibActions" class="ib-actions edit-only">
-                <button class="ib-add-btn" id="ibAddRow">＋ 항목</button>
-                <button class="ib-add-btn" id="ibAddSection">＋ 소제목</button>
-                <button class="ib-add-btn" id="ibDelRow">－ 마지막 항목</button>
+              <!-- 인포박스 테이블 -->
+              <table class="ib-table"><tbody id="ibTbody"></tbody></table>
+              <!-- 편집 버튼 -->
+              <div class="ib-acts">
+                <button id="ibAddRow" class="ib-abtn">＋ 항목</button>
+                <button id="ibAddSec" class="ib-abtn">＋ 소제목</button>
+                <button id="ibDelRow" class="ib-abtn">－ 마지막</button>
               </div>
             </div>
           </div>
 
-          <!-- ARTICLE SECTIONS -->
+          <!-- ARTICLE -->
           <div id="articleWrap">
             <div id="article"></div>
-
-            <!-- ADD SECTION BAR (edit mode only) -->
-            <div id="addSectionBar" class="add-section-bar edit-only">
-              <span class="add-section-label">섹션 추가</span>
-              <div class="add-section-btns">
-                <button class="add-sec-btn" data-type="text">📝 텍스트</button>
-                <button class="add-sec-btn" data-type="list">📋 목록</button>
-                <button class="add-sec-btn" data-type="stats">📊 능력치</button>
-                <button class="add-sec-btn" data-type="relations">👥 인물관계</button>
-                <button class="add-sec-btn" data-type="timeline">⏱ 타임라인</button>
-                <button class="add-sec-btn" data-type="quotes">💬 어록</button>
-                <button class="add-sec-btn" data-type="gallery">🖼 갤러리</button>
-                <button class="add-sec-btn" data-type="video">▶ 유튜브</button>
-                <button class="add-sec-btn" data-type="links">🔗 외부링크</button>
-                <button class="add-sec-btn" data-type="spoiler">🙈 스포일러</button>
-                <button class="add-sec-btn" data-type="table">🗂 표</button>
+            <!-- 섹션 추가 바 (편집 모드) -->
+            <div class="add-sec-bar eo-blk">
+              <span class="add-sec-lbl">섹션 추가</span>
+              <div class="add-sec-btns">
+                <button class="asb" data-type="text">📝 텍스트</button>
+                <button class="asb" data-type="list">📋 목록</button>
+                <button class="asb" data-type="stats">📊 능력치</button>
+                <button class="asb" data-type="relations">👥 인물관계</button>
+                <button class="asb" data-type="timeline">⏱ 타임라인</button>
+                <button class="asb" data-type="quotes">💬 어록</button>
+                <button class="asb" data-type="gallery">🖼 갤러리</button>
+                <button class="asb" data-type="video">▶ 유튜브</button>
+                <button class="asb" data-type="links">🔗 외부링크</button>
+                <button class="asb" data-type="spoiler">🙈 스포일러</button>
+                <button class="asb" data-type="table">🗂 표</button>
               </div>
             </div>
           </div>
-
-        </div><!-- end contentLayout -->
-
-        <!-- CATEGORY ROW -->
-        <div id="categoryRow" class="cat-row">
-          <span class="cat-label">분류</span>
-          <div id="catList" class="cat-list"></div>
-          <button id="addCatBtn" class="cat-add-btn edit-only" aria-label="분류 추가">＋</button>
         </div>
 
-        <!-- SUBPAGE REDIRECT NOTICE (shown in subpage view) -->
-        <div id="backToMainRow" style="display:none">
-          <button id="backToMainBtn" class="back-main-btn">← 메인 페이지로</button>
+        <!-- 분류 -->
+        <div class="cat-row">
+          <span class="cat-lbl">분류</span>
+          <div id="catList"></div>
+          <button id="addCatBtn" class="cat-add">＋</button>
         </div>
+        <!-- 하위 페이지 뒤로 -->
+        <div id="backRow" style="display:none">
+          <button id="backBtn" class="back-btn">← 메인 페이지로</button>
+        </div>
+      </div>
 
-      </main>
+      <!-- STYLE PANEL -->
+      <aside id="stylePanel">
+        <div class="sp-hd">꾸미기</div>
 
-      <!-- RIGHT: TOOLS PANEL (edit mode) -->
-      <aside id="toolsPanel" class="tools-panel edit-only" aria-label="편집 도구">
-        <div class="tools-head">꾸미기</div>
-
-        <div class="tool-group">
-          <div class="tool-label">테마</div>
-          <div class="theme-grid">
-            <button class="th-btn active" data-theme="light">☀ 라이트</button>
-            <button class="th-btn" data-theme="dark">🌙 다크</button>
-            <button class="th-btn" data-theme="sepia">📜 세피아</button>
-            <button class="th-btn" data-theme="pink">🌸 핑크</button>
-            <button class="th-btn" data-theme="mint">🌿 민트</button>
-            <button class="th-btn" data-theme="navy">🌊 네이비</button>
-            <button class="th-btn" data-theme="galaxy">⭐ 갤럭시</button>
-            <button class="th-btn" data-theme="retro">📺 레트로</button>
+        <div class="sg">
+          <span class="sg-lbl">테마</span>
+          <div class="th-grid">
+            <button class="th-btn on" data-theme="light">☀ 라이트</button>
+            <button class="th-btn"    data-theme="dark">🌙 다크</button>
+            <button class="th-btn"    data-theme="sepia">📜 세피아</button>
+            <button class="th-btn"    data-theme="pink">🌸 핑크</button>
+            <button class="th-btn"    data-theme="mint">🌿 민트</button>
+            <button class="th-btn"    data-theme="navy">🌊 네이비</button>
+            <button class="th-btn"    data-theme="galaxy">⭐ 갤럭시</button>
+            <button class="th-btn"    data-theme="retro">📺 레트로</button>
           </div>
         </div>
 
-        <div class="tool-group">
-          <div class="tool-label">강조 색상</div>
-          <div class="accent-row">
-            <button class="ac-dot active" data-accent="#2563eb" style="background:#2563eb" aria-label="블루"></button>
-            <button class="ac-dot" data-accent="#dc2626" style="background:#dc2626" aria-label="레드"></button>
-            <button class="ac-dot" data-accent="#16a34a" style="background:#16a34a" aria-label="그린"></button>
-            <button class="ac-dot" data-accent="#9333ea" style="background:#9333ea" aria-label="퍼플"></button>
-            <button class="ac-dot" data-accent="#ea580c" style="background:#ea580c" aria-label="오렌지"></button>
-            <button class="ac-dot" data-accent="#0891b2" style="background:#0891b2" aria-label="시안"></button>
-            <button class="ac-dot" data-accent="#be185d" style="background:#be185d" aria-label="핫핑크"></button>
-            <input type="color" id="accentCustom" value="#2563eb" class="ac-custom" aria-label="직접 선택"/>
+        <div class="sg">
+          <span class="sg-lbl">강조 색상</span>
+          <div class="ac-row">
+            <button class="ac-dot on" data-accent="#2563eb" style="background:#2563eb" aria-label="블루"></button>
+            <button class="ac-dot"    data-accent="#dc2626" style="background:#dc2626" aria-label="레드"></button>
+            <button class="ac-dot"    data-accent="#16a34a" style="background:#16a34a" aria-label="그린"></button>
+            <button class="ac-dot"    data-accent="#9333ea" style="background:#9333ea" aria-label="퍼플"></button>
+            <button class="ac-dot"    data-accent="#ea580c" style="background:#ea580c" aria-label="오렌지"></button>
+            <button class="ac-dot"    data-accent="#0891b2" style="background:#0891b2" aria-label="시안"></button>
+            <button class="ac-dot"    data-accent="#be185d" style="background:#be185d" aria-label="핫핑크"></button>
+            <input id="acInp" type="color" value="#2563eb" class="ac-inp" aria-label="직접 선택"/>
           </div>
         </div>
 
-        <div class="tool-group">
-          <div class="tool-label">폰트</div>
+        <div class="sg">
+          <span class="sg-lbl">폰트</span>
           <div class="opt-row">
-            <button class="opt-btn active" data-font="modern">모던</button>
-            <button class="opt-btn" data-font="serif">명조</button>
-            <button class="opt-btn" data-font="mono">모노</button>
+            <button class="opt-btn on" data-font="sans">모던</button>
+            <button class="opt-btn"    data-font="serif">명조</button>
+            <button class="opt-btn"    data-font="mono">모노</button>
           </div>
         </div>
 
-        <div class="tool-group">
-          <div class="tool-label">인포박스 스타일</div>
+        <div class="sg">
+          <span class="sg-lbl">인포박스</span>
           <div class="opt-row">
-            <button class="opt-btn active" data-ibstyle="classic">클래식</button>
-            <button class="opt-btn" data-ibstyle="card">카드</button>
-            <button class="opt-btn" data-ibstyle="minimal">미니멀</button>
+            <button class="opt-btn on" data-ibs="classic">클래식</button>
+            <button class="opt-btn"    data-ibs="card">카드</button>
+            <button class="opt-btn"    data-ibs="minimal">미니멀</button>
           </div>
         </div>
 
-        <div class="tool-group">
-          <div class="tool-label">레이아웃</div>
+        <div class="sg">
+          <span class="sg-lbl">레이아웃</span>
           <div class="opt-row">
-            <button class="opt-btn active" data-layout="right">우측</button>
-            <button class="opt-btn" data-layout="left">좌측</button>
-            <button class="opt-btn" data-layout="top">상단</button>
+            <button class="opt-btn on" data-lay="right">우측</button>
+            <button class="opt-btn"    data-lay="left">좌측</button>
+            <button class="opt-btn"    data-lay="top">상단</button>
           </div>
         </div>
 
-        <div class="tool-group">
-          <div class="tool-label">글자 크기 <span id="fszLabel">15</span>px</div>
-          <input type="range" id="fszRange" min="13" max="20" value="15" class="range-sl" aria-label="글자 크기"/>
+        <div class="sg">
+          <span class="sg-lbl">글자 크기 <span id="fszLbl">15</span>px</span>
+          <input id="fszRange" type="range" min="13" max="20" value="15" class="rsl"/>
         </div>
 
-        <div class="tool-group">
-          <div class="tool-label">배경 패턴</div>
-          <div class="opt-row wrap">
-            <button class="opt-btn active" data-pat="none">없음</button>
-            <button class="opt-btn" data-pat="grid">격자</button>
-            <button class="opt-btn" data-pat="dot">도트</button>
-            <button class="opt-btn" data-pat="lines">줄무늬</button>
-          </div>
-        </div>
-
-        <div class="tool-group">
-          <div class="tool-label">섹션 구분선</div>
+        <div class="sg">
+          <span class="sg-lbl">배경 패턴</span>
           <div class="opt-row">
-            <button class="opt-btn active" data-div="line">실선</button>
-            <button class="opt-btn" data-div="dashed">점선</button>
-            <button class="opt-btn" data-div="gradient">그라데이션</button>
-            <button class="opt-btn" data-div="none">없음</button>
+            <button class="opt-btn on" data-pat="none">없음</button>
+            <button class="opt-btn"    data-pat="grid">격자</button>
+            <button class="opt-btn"    data-pat="dot">도트</button>
+            <button class="opt-btn"    data-pat="lines">줄무늬</button>
           </div>
         </div>
 
-        <div class="tool-group">
-          <button id="resetStyleBtn" class="reset-btn">↺ 스타일 초기화</button>
+        <div class="sg">
+          <span class="sg-lbl">구분선</span>
+          <div class="opt-row">
+            <button class="opt-btn on" data-dv="line">실선</button>
+            <button class="opt-btn"    data-dv="dashed">점선</button>
+            <button class="opt-btn"    data-dv="gradient">그라데이션</button>
+            <button class="opt-btn"    data-dv="none">없음</button>
+          </div>
+        </div>
+
+        <div class="sg">
+          <button id="resetSP" class="reset-sp">↺ 스타일 초기화</button>
         </div>
       </aside>
 
     </div><!-- end wikiBody -->
   </div><!-- end wikiScreen -->
-</div><!-- end mainWrap -->
+</div><!-- end main -->
 
 <!-- BACK TO TOP -->
 <button id="btt" aria-label="맨 위로">▲</button>
 
-<!-- ════════════════ MODALS ════════════════ -->
+<!-- ══════════ MODALS ══════════ -->
 
-<!-- New Character Modal -->
-<div class="modal" id="newCharModal" role="dialog" aria-modal="true" aria-labelledby="ncModalTitle">
-  <div class="modal-box">
-    <h2 class="modal-title" id="ncModalTitle">새 캐릭터 만들기</h2>
-    <label class="modal-label">캐릭터 이름 <input type="text" id="newCharName" class="modal-input" placeholder="예: 홍길동" maxlength="50"/></label>
-    <label class="modal-label">한 줄 소개 <input type="text" id="newCharSub" class="modal-input" placeholder="예: 조선 시대 의적" maxlength="100"/></label>
-    <label class="modal-label">분류 태그 (콤마로 구분) <input type="text" id="newCharTags" class="modal-input" placeholder="예: 캐릭터, 한국 문학"/></label>
-    <div class="modal-actions">
-      <button class="modal-cancel" data-close="newCharModal">취소</button>
-      <button class="modal-ok" id="newCharOk">만들기</button>
+<div class="modal" id="newCharModal">
+  <div class="mbox">
+    <h2 class="m-ttl">새 캐릭터 만들기</h2>
+    <label class="m-lbl">이름 <input id="ncName" type="text" class="m-inp" placeholder="예: 홍길동" maxlength="50"/></label>
+    <label class="m-lbl">한 줄 소개 <input id="ncSub" type="text" class="m-inp" placeholder="예: 조선 시대 의적" maxlength="100"/></label>
+    <label class="m-lbl">분류 태그 (콤마 구분) <input id="ncTags" type="text" class="m-inp" placeholder="예: 캐릭터, 한국 문학"/></label>
+    <div class="m-acts">
+      <button class="m-cancel" data-close="newCharModal">취소</button>
+      <button class="m-ok" id="newCharOk">만들기</button>
     </div>
   </div>
 </div>
 
-<!-- Infobox Add Row Modal -->
-<div class="modal" id="ibAddModal" role="dialog" aria-modal="true" aria-labelledby="ibModalTitle">
-  <div class="modal-box">
-    <h2 class="modal-title" id="ibModalTitle">항목 추가</h2>
-    <label class="modal-label">항목명 <input type="text" id="ibAddKey" class="modal-input" placeholder="예: MBTI"/></label>
-    <label class="modal-label">내용 <input type="text" id="ibAddVal" class="modal-input" placeholder="예: INTJ"/></label>
-    <div class="modal-actions">
-      <button class="modal-cancel" data-close="ibAddModal">취소</button>
-      <button class="modal-ok" id="ibAddOk">추가</button>
+<div class="modal" id="ibAddModal">
+  <div class="mbox">
+    <h2 class="m-ttl">항목 추가</h2>
+    <label class="m-lbl">항목명 <input id="ibAKey" type="text" class="m-inp" placeholder="예: MBTI"/></label>
+    <label class="m-lbl">내용   <input id="ibAVal" type="text" class="m-inp" placeholder="예: INTJ"/></label>
+    <div class="m-acts">
+      <button class="m-cancel" data-close="ibAddModal">취소</button>
+      <button class="m-ok" id="ibAddOk">추가</button>
     </div>
   </div>
 </div>
 
-<!-- Subpage Name Modal -->
-<div class="modal" id="subpageModal" role="dialog" aria-modal="true" aria-labelledby="spModalTitle">
-  <div class="modal-box">
-    <h2 class="modal-title" id="spModalTitle">하위 페이지 추가</h2>
-    <label class="modal-label">페이지 이름 <input type="text" id="subPageName" class="modal-input" placeholder="예: 2기 설정, 외전, 관계도"/></label>
-    <div class="modal-actions">
-      <button class="modal-cancel" data-close="subpageModal">취소</button>
-      <button class="modal-ok" id="subPageOk">추가</button>
+<div class="modal" id="subModal">
+  <div class="mbox">
+    <h2 class="m-ttl">하위 페이지 추가</h2>
+    <label class="m-lbl">페이지 이름 <input id="subName" type="text" class="m-inp" placeholder="예: 2기, 외전, 관계도"/></label>
+    <div class="m-acts">
+      <button class="m-cancel" data-close="subModal">취소</button>
+      <button class="m-ok" id="subOk">추가</button>
     </div>
   </div>
 </div>
 
-<!-- Video Add Modal -->
-<div class="modal" id="videoModal" role="dialog" aria-modal="true" aria-labelledby="vidModalTitle">
-  <div class="modal-box">
-    <h2 class="modal-title" id="vidModalTitle">유튜브 영상 추가</h2>
-    <label class="modal-label">유튜브 URL <input type="text" id="ytUrl" class="modal-input" placeholder="https://www.youtube.com/watch?v=..."/></label>
-    <div class="modal-actions">
-      <button class="modal-cancel" data-close="videoModal">취소</button>
-      <button class="modal-ok" id="videoOk">추가</button>
+<div class="modal" id="videoModal">
+  <div class="mbox">
+    <h2 class="m-ttl">유튜브 영상 추가</h2>
+    <label class="m-lbl">URL <input id="ytUrl" type="text" class="m-inp" placeholder="https://www.youtube.com/watch?v=..."/></label>
+    <div class="m-acts">
+      <button class="m-cancel" data-close="videoModal">취소</button>
+      <button class="m-ok" id="videoOk">추가</button>
     </div>
   </div>
 </div>
 
-<!-- Delete Confirm Modal -->
-<div class="modal" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="cfModalTitle">
-  <div class="modal-box">
-    <h2 class="modal-title" id="cfModalTitle">삭제 확인</h2>
-    <p id="confirmMsg" class="confirm-msg"></p>
-    <div class="modal-actions">
-      <button class="modal-cancel" data-close="confirmModal">취소</button>
-      <button class="modal-ok danger" id="confirmOk">삭제</button>
+<div class="modal" id="confirmModal">
+  <div class="mbox">
+    <h2 class="m-ttl">삭제 확인</h2>
+    <p id="cfMsg" class="m-confirm"></p>
+    <div class="m-acts">
+      <button class="m-cancel" data-close="confirmModal">취소</button>
+      <button class="m-ok danger" id="cfOk">삭제</button>
     </div>
   </div>
 </div>
 
-<!-- Share Modal -->
-<div class="modal" id="shareModal" role="dialog" aria-modal="true" aria-labelledby="shrModalTitle">
-  <div class="modal-box">
-    <h2 class="modal-title" id="shrModalTitle">🔗 공유</h2>
-    <p class="modal-desc">아래 URL로 현재 캐릭터 위키를 읽기 전용으로 공유할 수 있어요.<br/>받는 사람은 편집 없이 보기만 가능합니다.</p>
-    <div class="share-url-row">
-      <input type="text" id="shareUrlInput" class="modal-input" readonly/>
-      <button id="copyShareUrl" class="modal-ok" style="flex-shrink:0">복사</button>
+<div class="modal" id="shareModal">
+  <div class="mbox">
+    <h2 class="m-ttl">🔗 URL 공유</h2>
+    <p class="m-desc">아래 URL로 현재 캐릭터를 읽기 전용으로 공유할 수 있어요.<br/>이미지는 URL 크기 제한으로 제외됩니다. 이미지 포함 공유는 JSON 백업을 사용하세요.</p>
+    <div class="shr-row">
+      <input id="shrUrl" type="text" class="m-inp" readonly/>
+      <button id="copyShrUrl" class="m-ok" style="flex-shrink:0;white-space:nowrap">복사</button>
     </div>
-    <p class="modal-note">※ URL이 길어질 수 있어요. 브라우저 단축 URL 서비스를 추가로 사용하면 편해요.</p>
   </div>
 </div>
 
-<!-- Emoji Picker Modal -->
-<div class="modal" id="emojiModal" role="dialog" aria-modal="true" aria-labelledby="emModalTitle">
-  <div class="modal-box">
-    <h2 class="modal-title" id="emModalTitle">이모지 선택</h2>
-    <div class="emoji-grid" id="emojiGrid" role="list"></div>
-    <div class="modal-actions">
-      <button class="modal-cancel" data-close="emojiModal">닫기</button>
-    </div>
+<div class="modal" id="emojiModal">
+  <div class="mbox">
+    <h2 class="m-ttl">이모지 선택</h2>
+    <div class="em-grid" id="emGrid"></div>
+    <div class="m-acts"><button class="m-cancel" data-close="emojiModal">닫기</button></div>
   </div>
 </div>
 
