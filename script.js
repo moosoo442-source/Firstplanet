@@ -303,9 +303,13 @@ function syncStylePanel(s) {
   $$('[data-lay]').forEach(b => b.classList.toggle('on', b.dataset.lay === (s.layout||'right')));
   $$('[data-pat]').forEach(b => b.classList.toggle('on', b.dataset.pat === (s.pattern||'none')));
   $$('[data-dv]').forEach(b => b.classList.toggle('on', b.dataset.dv === (s.divider||'line')));
-  $('fszRange').value = s.fontSize || 15;
-  $('fszLbl').textContent = s.fontSize || 15;
-  $('acInp').value = s.accent || '#2563eb';
+  const fsz = s.fontSize || 15;
+  const acc = s.accent || '#2563eb';
+  // 사이드 패널
+  $('fszRange').value = fsz; $('fszLbl').textContent = fsz; $('acInp').value = acc;
+  // 플로팅 패널 동기화
+  if ($('fszRangeFloat')) { $('fszRangeFloat').value = fsz; $('fszLblFloat').textContent = fsz; }
+  if ($('acInpFloat'))    $('acInpFloat').value = acc;
 }
 
 /* Style panel events */
@@ -1161,6 +1165,135 @@ function getYtId(url){
   const ps=[/youtu\.be\/([A-Za-z0-9_-]{11})/,/[?&]v=([A-Za-z0-9_-]{11})/,/embed\/([A-Za-z0-9_-]{11})/,/^([A-Za-z0-9_-]{11})$/];
   for(const p of ps){ const m=url.match(p); if(m) return m[1]; } return null;
 }
+
+
+/* ══ FLOATING THEME / STYLE PANELS ══ */
+(function setupFloatPanels() {
+  const overlay = $('fpOverlay');
+  let activePanel = null;
+
+  function openFP(id) {
+    if (activePanel && activePanel !== id) closeFP(activePanel);
+    $(id).classList.add('open');
+    overlay.classList.add('active');
+    activePanel = id;
+  }
+  function closeFP(id) {
+    if (id) $(id).classList.remove('open');
+    overlay.classList.remove('active');
+    activePanel = null;
+  }
+
+  $('themePanelBtn').onclick = e => {
+    e.stopPropagation();
+    activePanel === 'themePanelFloat' ? closeFP('themePanelFloat') : openFP('themePanelFloat');
+  };
+  $('stylePanelBtn').onclick = e => {
+    e.stopPropagation();
+    activePanel === 'stylePanelFloat' ? closeFP('stylePanelFloat') : openFP('stylePanelFloat');
+  };
+
+  overlay.onclick = () => closeFP(activePanel);
+
+  $$('.fp-close').forEach(btn => {
+    btn.onclick = () => closeFP(btn.dataset.fp);
+  });
+
+  // ── 플로팅 테마 버튼들 (HTML에 있는 .th-btn 전체를 이벤트 위임)
+  $$('#fpThemeGrid .th-btn').forEach(b => {
+    b.onclick = () => {
+      const ch = getChar();
+      if (ch) { ch.style.theme = b.dataset.theme; schedSave(); }
+      store.settings.theme = b.dataset.theme;
+      saveStore(store);
+      document.documentElement.setAttribute('data-theme', b.dataset.theme);
+      // 모든 th-btn (사이드 패널 포함) 동기화
+      $$('.th-btn').forEach(x => x.classList.toggle('on', x.dataset.theme === b.dataset.theme));
+      toast('🎨 ' + b.textContent + ' 테마 적용됨');
+    };
+  });
+
+  // ── 플로팅 강조색
+  $$('#fpAccentRow .ac-dot').forEach(d => {
+    d.onclick = () => {
+      const ch = getChar();
+      if (ch) { ch.style.accent = d.dataset.accent; schedSave(); }
+      setAccent(d.dataset.accent);
+      $$('.ac-dot').forEach(x => x.classList.remove('on')); d.classList.add('on');
+      $('acInp').value = d.dataset.accent;
+      $('acInpFloat').value = d.dataset.accent;
+    };
+  });
+  $('acInpFloat').oninput = () => {
+    const ch = getChar();
+    if (ch) { ch.style.accent = $('acInpFloat').value; schedSave(); }
+    setAccent($('acInpFloat').value);
+    $('acInp').value = $('acInpFloat').value;
+    $$('.ac-dot').forEach(x => x.classList.remove('on'));
+  };
+
+  // ── 플로팅 꾸미기 (font, ibs, lay, pat, dv)
+  $$('#stylePanelFloat [data-font]').forEach(b => b.onclick = () => {
+    const ch = getChar(); if (!ch) return;
+    ch.style.font = b.dataset.font;
+    body.className = body.className.replace(/font-\S+/g,'').trim();
+    body.classList.add('font-' + b.dataset.font);
+    $$('[data-font]').forEach(x => x.classList.toggle('on', x.dataset.font === b.dataset.font));
+    schedSave();
+  });
+  $$('#stylePanelFloat [data-ibs]').forEach(b => b.onclick = () => {
+    const ch = getChar(); if (!ch) return;
+    ch.style.ibStyle = b.dataset.ibs;
+    const ib = $('infobox'); ib.classList.remove('sty-classic','sty-card','sty-minimal');
+    ib.classList.add('sty-' + b.dataset.ibs);
+    $$('[data-ibs]').forEach(x => x.classList.toggle('on', x.dataset.ibs === b.dataset.ibs));
+    schedSave();
+  });
+  $$('#stylePanelFloat [data-lay]').forEach(b => b.onclick = () => {
+    const ch = getChar(); if (!ch) return;
+    ch.style.layout = b.dataset.lay;
+    $('cLayout').className = 'lay-' + b.dataset.lay;
+    $$('[data-lay]').forEach(x => x.classList.toggle('on', x.dataset.lay === b.dataset.lay));
+    schedSave();
+  });
+  $$('#stylePanelFloat [data-pat]').forEach(b => b.onclick = () => {
+    const ch = getChar(); if (!ch) return;
+    ch.style.pattern = b.dataset.pat;
+    body.className = body.className.replace(/pat-\S+/g,'').trim();
+    if (b.dataset.pat !== 'none') body.classList.add('pat-' + b.dataset.pat);
+    $$('[data-pat]').forEach(x => x.classList.toggle('on', x.dataset.pat === b.dataset.pat));
+    schedSave();
+  });
+  $$('#stylePanelFloat [data-dv]').forEach(b => b.onclick = () => {
+    const ch = getChar(); if (!ch) return;
+    ch.style.divider = b.dataset.dv;
+    applyDivider(b.dataset.dv);
+    $$('[data-dv]').forEach(x => x.classList.toggle('on', x.dataset.dv === b.dataset.dv));
+    schedSave();
+  });
+
+  $('fszRangeFloat').oninput = () => {
+    const ch = getChar(); if (!ch) return;
+    ch.style.fontSize = +$('fszRangeFloat').value;
+    document.documentElement.style.fontSize = $('fszRangeFloat').value + 'px';
+    $('fszLblFloat').textContent = $('fszRangeFloat').value;
+    $('fszRange').value = $('fszRangeFloat').value;
+    $('fszLbl').textContent = $('fszRangeFloat').value;
+    schedSave();
+  };
+
+  $('resetSPFloat').onclick = () => {
+    const ch = getChar(); if (!ch) return;
+    ch.style = { theme:'light', accent:'#2563eb', font:'sans', ibStyle:'classic', layout:'right', fontSize:15, pattern:'none', divider:'line' };
+    saveStore(store); applyStyle(ch); toast('↺ 스타일 초기화됨');
+  };
+
+  // syncStylePanel을 플로팅 패널에도 적용하도록 기존 함수 확장
+  const _origSync = syncStylePanel;
+  // syncStylePanel은 이미 $$('.th-btn') 등을 쓰므로 자동 동기화됨
+  // fszRange 플로팅 동기화만 추가
+  const origSyncSP = window.syncStylePanel;
+})();
 
 /* ── 37. INIT ── */
 function init() {

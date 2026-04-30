@@ -68,6 +68,10 @@
         <span id="modeIcon">👁</span>
         <span id="modeLbl">보기 모드</span>
       </div>
+      <!-- 테마 버튼 (항상 보임) -->
+      <button id="themePanelBtn" class="top-btn btn-theme" title="테마 변경">🎨 테마</button>
+      <!-- 꾸미기 버튼 (항상 보임) -->
+      <button id="stylePanelBtn" class="top-btn btn-theme" title="꾸미기">✨ 꾸미기</button>
       <button id="editBtn" class="top-btn btn-edit">✎ 편집</button>
       <button id="doneBtn" class="top-btn btn-done" style="display:none">✓ 완료</button>
       <button id="addSubPageBtn" class="top-btn btn-sub">＋ 하위 페이지</button>
@@ -377,6 +381,79 @@
     <div class="m-acts"><button class="m-cancel" data-close="emojiModal">닫기</button></div>
   </div>
 </div>
+
+
+<!-- ══ FLOATING THEME PANEL ══ -->
+<div id="themePanelFloat" class="float-panel" role="dialog" aria-label="테마 선택">
+  <div class="fp-head"><span>🎨 테마</span><button class="fp-close" data-fp="themePanelFloat">✕</button></div>
+  <div class="fp-body">
+    <div class="fp-section-label">테마</div>
+    <div class="th-grid" id="fpThemeGrid">
+      <button class="th-btn" data-theme="light">☀ 라이트</button>
+      <button class="th-btn" data-theme="dark">🌙 다크</button>
+      <button class="th-btn" data-theme="sepia">📜 세피아</button>
+      <button class="th-btn" data-theme="pink">🌸 핑크</button>
+      <button class="th-btn" data-theme="mint">🌿 민트</button>
+      <button class="th-btn" data-theme="navy">🌊 네이비</button>
+      <button class="th-btn" data-theme="galaxy">⭐ 갤럭시</button>
+      <button class="th-btn" data-theme="retro">📺 레트로</button>
+    </div>
+    <div class="fp-section-label" style="margin-top:14px">강조 색상</div>
+    <div class="ac-row" id="fpAccentRow">
+      <button class="ac-dot" data-accent="#2563eb" style="background:#2563eb" aria-label="블루"></button>
+      <button class="ac-dot" data-accent="#dc2626" style="background:#dc2626" aria-label="레드"></button>
+      <button class="ac-dot" data-accent="#16a34a" style="background:#16a34a" aria-label="그린"></button>
+      <button class="ac-dot" data-accent="#9333ea" style="background:#9333ea" aria-label="퍼플"></button>
+      <button class="ac-dot" data-accent="#ea580c" style="background:#ea580c" aria-label="오렌지"></button>
+      <button class="ac-dot" data-accent="#0891b2" style="background:#0891b2" aria-label="시안"></button>
+      <button class="ac-dot" data-accent="#be185d" style="background:#be185d" aria-label="핫핑크"></button>
+      <input id="acInpFloat" type="color" value="#2563eb" class="ac-inp" aria-label="직접 선택"/>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FLOATING STYLE PANEL ══ -->
+<div id="stylePanelFloat" class="float-panel" role="dialog" aria-label="꾸미기">
+  <div class="fp-head"><span>✨ 꾸미기</span><button class="fp-close" data-fp="stylePanelFloat">✕</button></div>
+  <div class="fp-body">
+    <div class="fp-section-label">폰트</div>
+    <div class="opt-row">
+      <button class="opt-btn" data-font="sans">모던</button>
+      <button class="opt-btn" data-font="serif">명조</button>
+      <button class="opt-btn" data-font="mono">모노</button>
+    </div>
+    <div class="fp-section-label">인포박스</div>
+    <div class="opt-row">
+      <button class="opt-btn" data-ibs="classic">클래식</button>
+      <button class="opt-btn" data-ibs="card">카드</button>
+      <button class="opt-btn" data-ibs="minimal">미니멀</button>
+    </div>
+    <div class="fp-section-label">레이아웃</div>
+    <div class="opt-row">
+      <button class="opt-btn" data-lay="right">우측</button>
+      <button class="opt-btn" data-lay="left">좌측</button>
+      <button class="opt-btn" data-lay="top">상단</button>
+    </div>
+    <div class="fp-section-label">배경 패턴</div>
+    <div class="opt-row">
+      <button class="opt-btn" data-pat="none">없음</button>
+      <button class="opt-btn" data-pat="grid">격자</button>
+      <button class="opt-btn" data-pat="dot">도트</button>
+      <button class="opt-btn" data-pat="lines">줄무늬</button>
+    </div>
+    <div class="fp-section-label">구분선</div>
+    <div class="opt-row">
+      <button class="opt-btn" data-dv="line">실선</button>
+      <button class="opt-btn" data-dv="dashed">점선</button>
+      <button class="opt-btn" data-dv="gradient">그라데이션</button>
+      <button class="opt-btn" data-dv="none">없음</button>
+    </div>
+    <div class="fp-section-label">글자 크기 <span id="fszLblFloat">15</span>px</div>
+    <input id="fszRangeFloat" type="range" min="13" max="20" value="15" class="rsl"/>
+    <button id="resetSPFloat" class="reset-sp" style="margin-top:12px">↺ 초기화</button>
+  </div>
+</div>
+<div id="fpOverlay" class="fp-overlay"></div>
 
 <script src="script.js"></script>
 </body>
