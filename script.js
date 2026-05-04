@@ -227,14 +227,17 @@ function setEditMode(on) {
   $('modeBadge').className = 'mode-badge ' + (on ? 'mode-edit' : 'mode-view');
   $('modeIcon').textContent = on ? '✎' : '👁';
   $('modeLbl').textContent  = on ? '편집 중' : '보기 모드';
-  // contenteditable 토글
+  // 제목/부제목 편집 가능 여부
   const ce = on ? 'true' : 'false';
-  $$('#charTitle, #charSub, .ib-hd span, #ibTbody th, #ibTbody td, .ib-sec-td').forEach(e => {
-    e.contentEditable = ce;
-  });
-  $$('#ibTbody th, #ibTbody td, #ibCap').forEach(e => e.contentEditable = ce);
-  // 섹션 내부 contenteditable 재렌더
-  if (curCharId) renderPage(getChar(), curPageId);
+  [$('charTitle'), $('charSub')].forEach(e => { if(e) e.contentEditable = ce; });
+  const ibSpan = document.querySelector('.ib-hd span');
+  if (ibSpan) ibSpan.contentEditable = ce;
+  $$('#ibTbody th, #ibTbody td, .ib-sec-td, #ibCap').forEach(e => e.contentEditable = ce);
+  // 페이지 재렌더 (섹션 도구/삭제 버튼 포함 여부 결정)
+  if (curCharId) {
+    renderPage(getChar(), curPageId);
+    renderCats(getChar());
+  }
 }
 
 $('editBtn').onclick = () => { setEditMode(true); toast('✎ 편집 모드'); };
@@ -559,19 +562,24 @@ function buildSec(sec, num, ch) {
 
   // Header
   const hd  = el('div','sec-hd');
-  const dh  = el('span','drag-h','⠿'); dh.title='드래그로 순서 변경';
   const ttl = el('h2','sec-ttl');
   ttl.textContent = `${num}. ${sec.title||'섹션'}`;
   ttl.id = 'sec-' + sec.id;
-  ttl.contentEditable = editMode ? 'true' : 'false';
-  ttl.addEventListener('input', schedSave);
-
-  const tools = el('div','sec-tools');
-  const upB = el('button','stool','↑'); upB.title='위로';    upB.onclick=()=>moveS(sec.id,-1,ch);
-  const dnB = el('button','stool','↓'); dnB.title='아래로';  dnB.onclick=()=>moveS(sec.id,1,ch);
-  const dlB = el('button','stool del','🗑'); dlB.title='삭제'; dlB.onclick=()=>confirm2(`"${sec.title}" 섹션을 삭제할까요?`,()=>deleteS(sec.id,ch));
-  tools.append(upB,dnB,dlB);
-  hd.append(dh, ttl, tools);
+  if (editMode) {
+    const dh = el('span','drag-h','⠿'); dh.title='드래그로 순서 변경';
+    hd.appendChild(dh);
+    ttl.contentEditable = 'true';
+    ttl.addEventListener('input', schedSave);
+  }
+  hd.appendChild(ttl);
+  if (editMode) {
+    const tools = el('div','sec-tools');
+    const upB = el('button','stool','↑'); upB.title='위로';    upB.onclick=()=>moveS(sec.id,-1,ch);
+    const dnB = el('button','stool','↓'); dnB.title='아래로';  dnB.onclick=()=>moveS(sec.id,1,ch);
+    const dlB = el('button','stool del','🗑'); dlB.title='삭제'; dlB.onclick=()=>confirm2(`"${sec.title}" 섹션을 삭제할까요?`,()=>deleteS(sec.id,ch));
+    tools.append(upB,dnB,dlB);
+    hd.appendChild(tools);
+  }
   wrap.appendChild(hd);
 
   // Body
