@@ -249,14 +249,30 @@ $('fszRangeFloat').oninput=()=>applyFsz($('fszRangeFloat').value);
 $('acInpFloat').oninput=()=>applyAccentColor($('acInpFloat').value);
 $('resetSPFloat').onclick=()=>resetStyle();
 
+const THEME_ACCENTS={light:'#2563eb',dark:'#3b82f6',sepia:'#92400e',pink:'#be185d',mint:'#059669',navy:'#38bdf8',galaxy:'#c084fc',retro:'#b45309'};
 function applyThemeBtn(b){
   const ch=getChar();const t=b.dataset.theme;
-  if(ch){ch.style.theme=t;schedSave();}
+  if(ch){
+    ch.style.theme=t;
+    /* 캐릭터 accent가 이전 테마 기본값이었으면 새 테마 기본값으로 교체 */
+    const oldDefault=THEME_ACCENTS[store.settings.theme||'light'];
+    if(!ch.style.accent||ch.style.accent===oldDefault){
+      ch.style.accent=THEME_ACCENTS[t]||'#2563eb';
+    }
+    schedSave();
+  }
   store.settings.theme=t;saveStore(store);
   document.documentElement.setAttribute('data-theme',t);
-  /* 테마 변경 시 accent를 캐릭터 설정값으로 재적용 */
-  if(ch)setAccent(ch.style.accent||'#2563eb');
+  /* CSS 변수 초기화 후 캐릭터 accent 재적용 */
+  document.documentElement.style.removeProperty('--ac');
+  document.documentElement.style.removeProperty('--ac-h');
+  document.documentElement.style.removeProperty('--ac-l');
+  document.documentElement.style.removeProperty('--bar-a');
+  if(ch&&ch.style.accent!==THEME_ACCENTS[t]){
+    setAccent(ch.style.accent);
+  }
   $$('.th-btn').forEach(x=>x.classList.toggle('on',x.dataset.theme===t));
+  syncStylePanel(ch?.style||{theme:t,accent:THEME_ACCENTS[t]||'#2563eb'});
   toast('🎨 '+b.textContent.trim()+' 테마');
 }
 function applyAccentBtn(d){

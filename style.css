@@ -167,16 +167,16 @@ body.edit .av-cam{display:flex}
 .toc-a{color:var(--tx-2);padding:4px 8px;border-radius:5px;display:block;line-height:1.4;transition:background var(--tr),color var(--tr);text-decoration:none}
 .toc-a:hover{background:var(--ac-l);color:var(--ac);text-decoration:none}.toc-a.on{color:var(--ac);font-weight:600;background:var(--ac-l)}
 /* 콘텐츠 영역 */
-#pageArea{flex:1;min-width:0;width:100%}
+#pageArea{flex:1;min-width:0;width:100%;overflow:hidden}
 
 /* ── CONTENT LAYOUT (infobox + article) ── */
-#cLayout{display:flex;gap:20px;align-items:flex-start;width:100%}
+#cLayout{display:flex;gap:20px;align-items:flex-start;width:100%;min-width:0}
 #cLayout.lay-left{flex-direction:row-reverse}
 #cLayout.lay-top{flex-direction:column}
-#cLayout.lay-top #ibWrap{width:100%}
+#cLayout.lay-top #ibWrap{width:100%!important}
 #ibWrap{width:240px;flex-shrink:0}
 #articleWrap{flex:1;min-width:0}
-#article{display:flex;flex-direction:column}
+#article{display:flex;flex-direction:column;width:100%;min-width:0}
 
 /* ── INFOBOX ── */
 .ib{background:var(--bg-ib);border:1px solid var(--bd-s);border-radius:var(--r-m);overflow:hidden;font-size:.86rem;box-shadow:var(--sh-s)}
@@ -435,7 +435,10 @@ body.edit .wsec[draggable=true]:active{cursor:grabbing}
 
 /* iPad landscape ~ 소형 노트북 (768~1024px) */
 @media(max-width:1024px){
-  #wikiBody{flex-direction:column;padding:18px 16px 40px}
+  #wikiBody{flex-direction:column;padding:18px 16px 40px
+  #ibWrap{width:100%!important}
+  #cLayout{flex-direction:column!important}
+}
   #wikiRow{flex-direction:column}
   #pageArea{width:100%}
 }
