@@ -1,367 +1,148 @@
 <!DOCTYPE html>
-<html lang="ko" data-theme="light">
+<html lang="ko">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<meta name="description" content="CharaWiki — 캐릭터 위키 빌더"/>
-<title>CharaWiki</title>
-<link rel="stylesheet" href="style.css"/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Nanum+Myeongjo:wght@400;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>CharaWiki v3.3</title>
+<link rel="stylesheet" href="style.css" />
 </head>
-<body class="font-sans">
+<body data-theme="light" data-font="modern" data-infobox="classic" data-layout="right" data-pattern="none" data-divider="solid">
+  <div id="readBar"></div>
 
-<div id="rdProg"></div>
-<div id="toastWrap" aria-live="polite"></div>
-<div id="lightbox"><button id="lbClose">✕</button><img id="lbImg" src="" alt=""/></div>
-<div class="sb-overlay" id="sbOverlay"></div>
+  <button id="sidebarToggle" class="icon-btn" aria-label="사이드바 열기">☰</button>
 
-<!-- SIDEBAR -->
-<div id="sidebar" class="hidden">
-  <div class="sb-head">
-    <div class="sb-logo"><span class="logo-w">W</span><span class="logo-t">CharaWiki</span></div>
-    <button id="sbClose" class="ib2">✕</button>
-  </div>
-  <div class="sb-search"><input id="charSearch" type="text" placeholder="캐릭터 검색..."/></div>
-  <nav class="sb-nav">
-    <span class="sb-nav-label">캐릭터</span>
+  <aside id="sidebar">
+    <div class="sb-head">
+      <h2>📚 캐릭터</h2>
+      <button id="addCharBtn" class="btn-sm">+ 새 캐릭터</button>
+    </div>
+    <input id="charSearch" type="search" placeholder="🔍 검색..." />
     <ul id="charList"></ul>
-    <button id="newCharBtn" class="new-char-btn"><span>＋</span> 새 캐릭터 만들기</button>
-  </nav>
-  <div class="sb-foot">
-    <button id="themeToggle" class="ib2" title="라이트/다크">◑</button>
-    <button id="shareBtn"    class="ib2" title="URL 공유">⬆</button>
-    <button id="exportBtn"   class="ib2" title="전체 백업">↓</button>
-    <button id="importBtn"   class="ib2" title="백업 불러오기">↑</button>
-    <input id="importFile" type="file" accept=".json" style="display:none"/>
-  </div>
-</div>
-
-<!-- MAIN -->
-<div id="main">
-
-  <!-- TOPBAR -->
-  <header id="topBar">
-    <button id="menuBtn" class="ib2">☰</button>
-    <nav id="breadcrumb">
-      <span id="breadHome" class="bread-home" tabindex="0">CharaWiki</span>
-      <span class="bread-sep">›</span>
-      <span id="breadCur" class="bread-cur"></span>
-      <span id="breadSubWrap" style="display:none">
-        <span class="bread-sep">›</span>
-        <span id="breadSubName" class="bread-sub-name"></span>
-      </span>
-    </nav>
-    <div id="topRight">
-      <div id="modeBadge" class="mode-badge mode-view"><span id="modeIcon">👁</span><span id="modeLbl">보기 모드</span></div>
-      <button id="themePanelBtn" class="top-btn btn-theme">🎨 테마</button>
-      <button id="stylePanelBtn" class="top-btn btn-theme btn-hide-sm">✨ 꾸미기</button>
-      <button id="editBtn"  class="top-btn btn-edit">✎ 편집</button>
-      <button id="doneBtn"  class="top-btn btn-done" style="display:none">✓ 완료</button>
-      <button id="addSubPageBtn" class="top-btn btn-sub">＋ 하위 페이지</button>
+    <div class="sb-foot">
+      <button id="exportBtn" class="btn-sm">⬇ 백업</button>
+      <button id="importBtn" class="btn-sm">⬆ 불러오기</button>
+      <button id="shareBtn" class="btn-sm">🔗 공유</button>
+      <input type="file" id="importFile" accept=".json" hidden />
     </div>
-  </header>
+  </aside>
 
-  <!-- HOME -->
-  <div id="homeScreen">
-    <div class="hero">
-      <div class="hero-mark">W</div>
-      <h1 class="hero-h1">CharaWiki</h1>
-      <p class="hero-p">캐릭터를 만들고, 꾸미고, 공유하세요.</p>
-      <button id="heroNewBtn" class="hero-btn">＋ 첫 캐릭터 만들기</button>
-    </div>
-  </div>
+  <div id="sidebarOverlay"></div>
 
-  <!-- WIKI SCREEN -->
-  <div id="wikiScreen">
+  <main id="main">
+    <header id="topbar">
+      <button id="editToggle" class="btn-primary">✏️ 편집</button>
+      <button id="saveBtn" class="btn-sm" title="Ctrl+S">💾 저장</button>
+      <div class="spacer"></div>
+      <button id="themeBtn" class="icon-btn" title="테마">🎨</button>
+      <button id="decoBtn" class="icon-btn" title="꾸미기">✨</button>
+    </header>
 
-    <!-- WIKI HEADER -->
-    <div id="wikiHead">
-      <div id="coverArea">
-        <div id="coverBg" class="cover-bg"></div>
-        <div class="cover-grad"></div>
-        <div id="coverBtns">
-          <button id="changeCoverBtn" class="cov-btn">🖼 커버 변경</button>
-          <button id="rmCoverBtn"     class="cov-btn">✕ 제거</button>
-          <input id="coverUpload" type="file" accept="image/*" style="display:none"/>
+    <div id="cover"></div>
+
+    <article id="article">
+      <div id="titleBlock">
+        <div id="avatar"></div>
+        <div>
+          <h1 id="title" data-edit="title">캐릭터 이름</h1>
+          <p id="subtitle" data-edit="subtitle">부제목</p>
+          <div id="tags"></div>
         </div>
       </div>
-      <div id="profileRow">
-        <div id="avatarWrap">
-          <div class="avatar">
-            <span id="avEmoji">🧑</span>
-            <img id="avImg" src="" alt="" style="display:none"/>
-            <button id="avCam" class="av-cam">📷</button>
-          </div>
-          <input id="avUpload" type="file" accept="image/*" style="display:none"/>
-        </div>
-        <div id="headInfo">
-          <div id="headerTags" class="char-tags"></div>
-          <h1 id="charTitle" contenteditable="false" spellcheck="false" data-ph="캐릭터 이름"></h1>
-          <p  id="charSub"   contenteditable="false" spellcheck="false" data-ph="한 줄 소개..."></p>
-        </div>
-        <div class="head-stats">
-          <div class="stat-i"><span id="stPages" class="stat-v">0</span><span class="stat-l">페이지</span></div>
-          <div class="stat-i"><span id="stWords"  class="stat-v">0</span><span class="stat-l">글자</span></div>
-          <div class="stat-i"><span id="stEdit"   class="stat-v">-</span><span class="stat-l">수정일</span></div>
-        </div>
+
+      <div id="tabs"></div>
+
+      <div id="pageBody">
+        <aside id="infobox"></aside>
+        <div id="sections"></div>
       </div>
-      <div id="tabBar"><div id="tabRow" class="tab-row"></div></div>
+
+      <nav id="toc"></nav>
+    </article>
+
+    <button id="topBtn" class="icon-btn" title="맨 위로">▲</button>
+  </main>
+
+  <!-- 패널들 -->
+  <div id="themePanel" class="panel hidden">
+    <h3>🎨 테마</h3>
+    <div class="theme-grid">
+      <button data-theme="light">라이트</button>
+      <button data-theme="dark">다크</button>
+      <button data-theme="sepia">세피아</button>
+      <button data-theme="pink">핑크</button>
+      <button data-theme="mint">민트</button>
+      <button data-theme="navy">네이비</button>
+      <button data-theme="galaxy">갤럭시</button>
+      <button data-theme="retro">레트로</button>
     </div>
-
-    <!-- WIKI BODY: flex 기반 (모바일:column, 데스크탑:row) -->
-    <div id="wikiBody">
-
-      <!-- TOC (데스크탑에서만 보임) -->
-      <aside id="tocBox">
-        <div class="toc-hd">목차</div>
-        <nav id="tocNav"></nav>
-      </aside>
-
-      <!-- ROW: 콘텐츠 + 스타일패널 -->
-      <div id="wikiRow">
-
-        <!-- PAGE AREA -->
-        <div id="pageArea">
-
-          <!-- infobox + article -->
-          <div id="cLayout" class="lay-right">
-            <div id="ibWrap">
-              <div id="infobox" class="ib sty-classic">
-                <div class="ib-hd"><span contenteditable="false" spellcheck="false" data-ph="캐릭터명">캐릭터명</span></div>
-                <div id="ibImgPh" class="ib-img-ph">
-                  <span>🖼</span><span>클릭하여 이미지 추가</span>
-                  <input id="ibImgUp" type="file" accept="image/*" class="fo"/>
-                </div>
-                <div id="ibImgWrap" style="display:none">
-                  <img id="ibImg" src="" alt=""/>
-                  <div id="ibCap" class="ib-cap" contenteditable="false" spellcheck="false" data-ph="이미지 설명"></div>
-                  <div class="ib-img-tools">
-                    <select id="ibFsel" class="fsel">
-                      <option value="">원본</option>
-                      <option value="grayscale(1)">흑백</option>
-                      <option value="sepia(0.8)">세피아</option>
-                      <option value="brightness(1.2) contrast(1.1)">선명</option>
-                      <option value="blur(1px)">소프트</option>
-                    </select>
-                    <button id="ibImgRm" class="sm-btn">✕ 제거</button>
-                  </div>
-                </div>
-                <table class="ib-table"><tbody id="ibTbody"></tbody></table>
-                <div class="ib-acts">
-                  <button id="ibAddRow" class="ib-abtn">＋ 항목</button>
-                  <button id="ibAddSec" class="ib-abtn">＋ 소제목</button>
-                  <button id="ibDelRow" class="ib-abtn">－ 마지막</button>
-                </div>
-              </div>
-            </div>
-
-            <div id="articleWrap">
-              <div id="article"></div>
-              <div class="add-sec-bar">
-                <span class="add-sec-lbl">섹션 추가</span>
-                <div class="add-sec-btns">
-                  <button class="asb" data-type="text">📝 텍스트</button>
-                  <button class="asb" data-type="list">📋 목록</button>
-                  <button class="asb" data-type="stats">📊 능력치</button>
-                  <button class="asb" data-type="relations">👥 인물관계</button>
-                  <button class="asb" data-type="timeline">⏱ 타임라인</button>
-                  <button class="asb" data-type="quotes">💬 어록</button>
-                  <button class="asb" data-type="gallery">🖼 갤러리</button>
-                  <button class="asb" data-type="video">▶ 유튜브</button>
-                  <button class="asb" data-type="links">🔗 외부링크</button>
-                  <button class="asb" data-type="spoiler">🙈 스포일러</button>
-                  <button class="asb" data-type="table">🗂 표</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 분류 -->
-          <div class="cat-row">
-            <span class="cat-lbl">분류</span>
-            <div id="catList"></div>
-            <button id="addCatBtn" class="cat-add">＋</button>
-          </div>
-          <div id="backRow" style="display:none">
-            <button id="backBtn" class="back-btn">← 메인 페이지로</button>
-          </div>
-        </div>
-
-        <!-- STYLE PANEL (데스크탑 편집모드) -->
-        <aside id="stylePanel">
-          <div class="sp-hd">꾸미기</div>
-          <div class="sg"><span class="sg-lbl">테마</span>
-            <div class="th-grid">
-              <button class="th-btn on" data-theme="light">☀ 라이트</button>
-              <button class="th-btn" data-theme="dark">🌙 다크</button>
-              <button class="th-btn" data-theme="sepia">📜 세피아</button>
-              <button class="th-btn" data-theme="pink">🌸 핑크</button>
-              <button class="th-btn" data-theme="mint">🌿 민트</button>
-              <button class="th-btn" data-theme="navy">🌊 네이비</button>
-              <button class="th-btn" data-theme="galaxy">⭐ 갤럭시</button>
-              <button class="th-btn" data-theme="retro">📺 레트로</button>
-            </div>
-          </div>
-          <div class="sg"><span class="sg-lbl">강조색</span>
-            <div class="ac-row">
-              <button class="ac-dot on" data-accent="#2563eb" style="background:#2563eb"></button>
-              <button class="ac-dot" data-accent="#dc2626" style="background:#dc2626"></button>
-              <button class="ac-dot" data-accent="#16a34a" style="background:#16a34a"></button>
-              <button class="ac-dot" data-accent="#9333ea" style="background:#9333ea"></button>
-              <button class="ac-dot" data-accent="#ea580c" style="background:#ea580c"></button>
-              <button class="ac-dot" data-accent="#0891b2" style="background:#0891b2"></button>
-              <button class="ac-dot" data-accent="#be185d" style="background:#be185d"></button>
-              <input id="acInp" type="color" value="#2563eb" class="ac-inp"/>
-            </div>
-          </div>
-          <div class="sg"><span class="sg-lbl">폰트</span>
-            <div class="opt-row">
-              <button class="opt-btn on" data-font="sans">모던</button>
-              <button class="opt-btn" data-font="serif">명조</button>
-              <button class="opt-btn" data-font="mono">모노</button>
-            </div>
-          </div>
-          <div class="sg"><span class="sg-lbl">인포박스</span>
-            <div class="opt-row">
-              <button class="opt-btn on" data-ibs="classic">클래식</button>
-              <button class="opt-btn" data-ibs="card">카드</button>
-              <button class="opt-btn" data-ibs="minimal">미니멀</button>
-            </div>
-          </div>
-          <div class="sg"><span class="sg-lbl">레이아웃</span>
-            <div class="opt-row">
-              <button class="opt-btn on" data-lay="right">우측</button>
-              <button class="opt-btn" data-lay="left">좌측</button>
-              <button class="opt-btn" data-lay="top">상단</button>
-            </div>
-          </div>
-          <div class="sg"><span class="sg-lbl">글자 크기 <span id="fszLbl">15</span>px</span>
-            <input id="fszRange" type="range" min="13" max="20" value="15" class="rsl"/>
-          </div>
-          <div class="sg"><span class="sg-lbl">배경 패턴</span>
-            <div class="opt-row">
-              <button class="opt-btn on" data-pat="none">없음</button>
-              <button class="opt-btn" data-pat="grid">격자</button>
-              <button class="opt-btn" data-pat="dot">도트</button>
-              <button class="opt-btn" data-pat="lines">줄무늬</button>
-            </div>
-          </div>
-          <div class="sg"><span class="sg-lbl">구분선</span>
-            <div class="opt-row">
-              <button class="opt-btn on" data-dv="line">실선</button>
-              <button class="opt-btn" data-dv="dashed">점선</button>
-              <button class="opt-btn" data-dv="gradient">그라데이션</button>
-              <button class="opt-btn" data-dv="none">없음</button>
-            </div>
-          </div>
-          <div class="sg"><button id="resetSP" class="reset-sp">↺ 초기화</button></div>
-        </aside>
-      </div><!-- end wikiRow -->
-    </div><!-- end wikiBody -->
-  </div><!-- end wikiScreen -->
-</div><!-- end main -->
-
-<button id="btt">▲</button>
-
-<!-- FLOATING THEME PANEL -->
-<div id="themePanelFloat" class="float-panel">
-  <div class="fp-head"><span>🎨 테마</span><button class="fp-close" data-fp="themePanelFloat">✕</button></div>
-  <div class="fp-body">
-    <div class="fp-lbl">테마</div>
-    <div class="th-grid" id="fpThemeGrid">
-      <button class="th-btn" data-theme="light">☀ 라이트</button>
-      <button class="th-btn" data-theme="dark">🌙 다크</button>
-      <button class="th-btn" data-theme="sepia">📜 세피아</button>
-      <button class="th-btn" data-theme="pink">🌸 핑크</button>
-      <button class="th-btn" data-theme="mint">🌿 민트</button>
-      <button class="th-btn" data-theme="navy">🌊 네이비</button>
-      <button class="th-btn" data-theme="galaxy">⭐ 갤럭시</button>
-      <button class="th-btn" data-theme="retro">📺 레트로</button>
+    <h4>강조 색상</h4>
+    <div id="accentRow" class="accent-row">
+      <button data-accent="#3b82f6" style="background:#3b82f6"></button>
+      <button data-accent="#ef4444" style="background:#ef4444"></button>
+      <button data-accent="#10b981" style="background:#10b981"></button>
+      <button data-accent="#f59e0b" style="background:#f59e0b"></button>
+      <button data-accent="#8b5cf6" style="background:#8b5cf6"></button>
+      <button data-accent="#ec4899" style="background:#ec4899"></button>
+      <button data-accent="#06b6d4" style="background:#06b6d4"></button>
+      <input type="color" id="accentPicker" />
     </div>
-    <div class="fp-lbl" style="margin-top:12px">강조 색상</div>
-    <div class="ac-row" id="fpAccentRow">
-      <button class="ac-dot" data-accent="#2563eb" style="background:#2563eb"></button>
-      <button class="ac-dot" data-accent="#dc2626" style="background:#dc2626"></button>
-      <button class="ac-dot" data-accent="#16a34a" style="background:#16a34a"></button>
-      <button class="ac-dot" data-accent="#9333ea" style="background:#9333ea"></button>
-      <button class="ac-dot" data-accent="#ea580c" style="background:#ea580c"></button>
-      <button class="ac-dot" data-accent="#0891b2" style="background:#0891b2"></button>
-      <button class="ac-dot" data-accent="#be185d" style="background:#be185d"></button>
-      <input id="acInpFloat" type="color" value="#2563eb" class="ac-inp"/>
+    <h4>폰트</h4>
+    <div class="row">
+      <button data-font="modern">모던</button>
+      <button data-font="serif">명조</button>
+      <button data-font="mono">모노</button>
+    </div>
+    <h4>글자 크기 <span id="fsLabel">15</span>px</h4>
+    <input type="range" id="fontSize" min="13" max="20" value="15" />
+  </div>
+
+  <div id="decoPanel" class="panel hidden">
+    <h3>✨ 꾸미기</h3>
+    <h4>인포박스</h4>
+    <div class="row">
+      <button data-infobox="classic">클래식</button>
+      <button data-infobox="card">카드</button>
+      <button data-infobox="minimal">미니멀</button>
+    </div>
+    <h4>레이아웃</h4>
+    <div class="row">
+      <button data-layout="right">우측</button>
+      <button data-layout="left">좌측</button>
+      <button data-layout="top">상단</button>
+    </div>
+    <h4>배경 패턴</h4>
+    <div class="row">
+      <button data-pattern="none">없음</button>
+      <button data-pattern="grid">격자</button>
+      <button data-pattern="dot">도트</button>
+      <button data-pattern="stripe">줄무늬</button>
+    </div>
+    <h4>구분선</h4>
+    <div class="row">
+      <button data-divider="solid">실선</button>
+      <button data-divider="dashed">점선</button>
+      <button data-divider="grad">그라데이션</button>
+      <button data-divider="none">없음</button>
+    </div>
+    <h4>커버 / 아바타</h4>
+    <div class="row">
+      <label class="btn-sm">커버 업로드<input type="file" id="coverUpload" accept="image/*" hidden /></label>
+      <button id="coverRemove" class="btn-sm">커버 제거</button>
+      <label class="btn-sm">아바타 업로드<input type="file" id="avatarUpload" accept="image/*" hidden /></label>
     </div>
   </div>
-</div>
 
-<!-- FLOATING STYLE PANEL -->
-<div id="stylePanelFloat" class="float-panel">
-  <div class="fp-head"><span>✨ 꾸미기</span><button class="fp-close" data-fp="stylePanelFloat">✕</button></div>
-  <div class="fp-body">
-    <div class="fp-lbl">폰트</div>
-    <div class="opt-row"><button class="opt-btn" data-font="sans">모던</button><button class="opt-btn" data-font="serif">명조</button><button class="opt-btn" data-font="mono">모노</button></div>
-    <div class="fp-lbl">인포박스</div>
-    <div class="opt-row"><button class="opt-btn" data-ibs="classic">클래식</button><button class="opt-btn" data-ibs="card">카드</button><button class="opt-btn" data-ibs="minimal">미니멀</button></div>
-    <div class="fp-lbl">레이아웃</div>
-    <div class="opt-row"><button class="opt-btn" data-lay="right">우측</button><button class="opt-btn" data-lay="left">좌측</button><button class="opt-btn" data-lay="top">상단</button></div>
-    <div class="fp-lbl">배경 패턴</div>
-    <div class="opt-row"><button class="opt-btn" data-pat="none">없음</button><button class="opt-btn" data-pat="grid">격자</button><button class="opt-btn" data-pat="dot">도트</button><button class="opt-btn" data-pat="lines">줄무늬</button></div>
-    <div class="fp-lbl">구분선</div>
-    <div class="opt-row"><button class="opt-btn" data-dv="line">실선</button><button class="opt-btn" data-dv="dashed">점선</button><button class="opt-btn" data-dv="gradient">그라데이션</button><button class="opt-btn" data-dv="none">없음</button></div>
-    <div class="fp-lbl">글자 크기 <span id="fszLblFloat">15</span>px</div>
-    <input id="fszRangeFloat" type="range" min="13" max="20" value="15" class="rsl"/>
-    <button id="resetSPFloat" class="reset-sp" style="margin-top:10px">↺ 초기화</button>
+  <!-- 라이트박스 -->
+  <div id="lightbox" class="hidden"><img id="lbImg" alt="" /></div>
+
+  <!-- 토스트 -->
+  <div id="toast" class="hidden"></div>
+
+  <!-- 이모지 팝업 -->
+  <div id="emojiPop" class="panel hidden">
+    <div id="emojiGrid"></div>
   </div>
-</div>
-<div id="fpOverlay" class="fp-overlay"></div>
 
-<!-- MODALS -->
-<div class="modal" id="newCharModal"><div class="mbox">
-  <h2 class="m-ttl">새 캐릭터 만들기</h2>
-  <label class="m-lbl">이름 <input id="ncName" type="text" class="m-inp" placeholder="예: 홍길동" maxlength="50"/></label>
-  <label class="m-lbl">한 줄 소개 <input id="ncSub" type="text" class="m-inp" placeholder="예: 조선 시대 의적" maxlength="100"/></label>
-  <label class="m-lbl">분류 태그 (콤마 구분) <input id="ncTags" type="text" class="m-inp" placeholder="예: 캐릭터, 한국 문학"/></label>
-  <div class="m-acts"><button class="m-cancel" data-close="newCharModal">취소</button><button class="m-ok" id="newCharOk">만들기</button></div>
-</div></div>
-
-<div class="modal" id="ibAddModal"><div class="mbox">
-  <h2 class="m-ttl">항목 추가</h2>
-  <label class="m-lbl">항목명 <input id="ibAKey" type="text" class="m-inp" placeholder="예: MBTI"/></label>
-  <label class="m-lbl">내용 <input id="ibAVal" type="text" class="m-inp" placeholder="예: INTJ"/></label>
-  <div class="m-acts"><button class="m-cancel" data-close="ibAddModal">취소</button><button class="m-ok" id="ibAddOk">추가</button></div>
-</div></div>
-
-<div class="modal" id="subModal"><div class="mbox">
-  <h2 class="m-ttl">하위 페이지 추가</h2>
-  <label class="m-lbl">페이지 이름 <input id="subName" type="text" class="m-inp" placeholder="예: 2기, 외전, 관계도"/></label>
-  <div class="m-acts"><button class="m-cancel" data-close="subModal">취소</button><button class="m-ok" id="subOk">추가</button></div>
-</div></div>
-
-<div class="modal" id="videoModal"><div class="mbox">
-  <h2 class="m-ttl">유튜브 영상 추가</h2>
-  <label class="m-lbl">URL <input id="ytUrl" type="text" class="m-inp" placeholder="https://www.youtube.com/watch?v=..."/></label>
-  <div class="m-acts"><button class="m-cancel" data-close="videoModal">취소</button><button class="m-ok" id="videoOk">추가</button></div>
-</div></div>
-
-<div class="modal" id="confirmModal"><div class="mbox">
-  <h2 class="m-ttl">삭제 확인</h2>
-  <p id="cfMsg" class="m-confirm"></p>
-  <div class="m-acts"><button class="m-cancel" data-close="confirmModal">취소</button><button class="m-ok danger" id="cfOk">삭제</button></div>
-</div></div>
-
-<div class="modal" id="shareModal"><div class="mbox">
-  <h2 class="m-ttl">🔗 URL 공유</h2>
-  <p class="m-desc">현재 캐릭터를 읽기 전용으로 공유합니다. 이미지는 URL 길이 제한으로 제외됩니다.</p>
-  <div class="shr-row"><input id="shrUrl" type="text" class="m-inp" readonly/><button id="copyShrUrl" class="m-ok" style="flex-shrink:0">복사</button></div>
-  <p class="m-note">이미지 포함 공유는 JSON 백업을 사용하세요.</p>
-</div></div>
-
-<div class="modal" id="emojiModal"><div class="mbox">
-  <h2 class="m-ttl">이모지 선택</h2>
-  <div class="em-grid" id="emGrid"></div>
-  <div class="m-acts"><button class="m-cancel" data-close="emojiModal">닫기</button></div>
-</div></div>
-
-<script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
